@@ -1,0 +1,19 @@
+{
+  "name": "@claude-monitor/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc --noEmit -p .",
+    "start": "tsx src/index.ts",
+    "scan": "tsx src/scan.ts",
+    "test": "node --import tsx --test test/*.test.ts"
+  },
+  "dependencies": {
+    "@claude-monitor/shared": "*",
+    "@fastify/static": "^10.1.10",
+    "chokidar": "^4.0.3",
+    "fastify": "^5.2.0"
+  }
+}
