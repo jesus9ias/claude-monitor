@@ -1,0 +1,175 @@
+/* Pipeline tab: a fixed SVG diagram of the session loop. */
+.pipeline-wrap {
+  position: relative;
+  min-height: 420px;
+}
+
+.pl-scroll {
+  overflow-x: auto;
+}
+
+.pl-svg {
+  display: block;
+  width: 100%;
+  min-width: 600px;
+  height: auto;
+}
+
+.pl-status {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-secondary);
+}
+
+.pl-status strong {
+  color: var(--text);
+}
+
+.pl-replay-tag {
+  margin-right: 4px;
+  padding: 0 6px;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  color: var(--accent);
+  font-size: 12px;
+}
+
+.pl-tools-box {
+  fill: none;
+  stroke: var(--baseline);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+.pl-caption {
+  fill: var(--text-muted);
+  font-size: 12px;
+}
+
+.pl-edge {
+  fill: none;
+  stroke: var(--baseline);
+  stroke-width: 1.5;
+  transition: stroke 0.2s;
+}
+
+.pl-edge.is-on {
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+.pl-edge-hidden {
+  fill: none;
+  stroke: none;
+}
+
+.pl-particle {
+  fill: var(--accent);
+}
+
+.pl-block {
+  --tone: var(--neutral);
+  cursor: pointer;
+  outline: none;
+}
+
+.pl-tone-model {
+  --tone: var(--series-7);
+}
+
+.pl-tone-tool {
+  --tone: var(--series-3);
+}
+
+.pl-tone-warn {
+  --tone: var(--warning);
+}
+
+.pl-block rect:first-of-type {
+  fill: color-mix(in srgb, var(--tone) 7%, var(--surface));
+  stroke: color-mix(in srgb, var(--tone) 45%, var(--surface));
+  stroke-width: 1;
+  transition: fill 0.25s, stroke 0.25s;
+}
+
+.pl-block:hover rect:first-of-type,
+.pl-block:focus-visible rect:first-of-type {
+  stroke: var(--text-secondary);
+}
+
+.pl-block.is-active rect:first-of-type {
+  fill: color-mix(in srgb, var(--tone) 22%, var(--surface));
+  stroke: var(--tone);
+  stroke-width: 2;
+}
+
+.pl-block.is-selected rect:first-of-type {
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+.pl-label {
+  fill: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.pl-sub {
+  fill: var(--text-secondary);
+  font-size: 11px;
+}
+
+.pl-bar-track {
+  fill: var(--grid);
+}
+
+.pl-bar-ok {
+  fill: var(--series-1);
+}
+
+.pl-bar-warning {
+  fill: var(--warning);
+}
+
+.pl-bar-critical {
+  fill: var(--critical);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pl-block.is-pulse rect:first-of-type {
+    animation: pl-pulse 1.4s ease-in-out infinite;
+  }
+}
+
+@keyframes pl-pulse {
+  50% {
+    fill: color-mix(in srgb, var(--tone) 38%, var(--surface));
+  }
+}
+
+.pl-current {
+  margin: 0 0 10px;
+}
+
+.pl-call {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.pl-counts {
+  width: 100%;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.pl-counts td {
+  padding: 3px 0;
+}
+
+.node-status-none {
+  color: var(--text-muted);
+}

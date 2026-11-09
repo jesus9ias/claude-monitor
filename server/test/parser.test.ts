@@ -3,10 +3,12 @@ import { appendFile, mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
-import { describeTranscript, parseLine } from "../src/parser/jsonl.js";
-import { messageCost, type PriceTable } from "../src/pricing.js";
-import { Scanner } from "../src/scanner.js";
-import { Store } from "../src/store.js";
+import { Bus } from "../src/bus.js";
+import { Monitor } from "../src/domain/monitor.js";
+import { messageCost, type PriceTable } from "../src/domain/pricing.js";
+import { SessionStore } from "../src/domain/sessions.js";
+import { Scanner } from "../src/ingest/scanner.js";
+import { describeTranscript, parseLine } from "../src/ingest/transcript.js";
 
 const prices: PriceTable = {
   m: { input: 1, output: 2, cacheRead: 0.1, cacheCreate: 1.25, cacheCreate1h: 2 },
@@ -40,7 +42,7 @@ test("malformed lines return null and never throw", () => {
 });
 
 test("usage repeated across a message's lines is counted once, with the latest value", () => {
-  const store = new Store(prices);
+  const store = new SessionStore(prices);
   for (const line of [
     assistant("u1", "msg1", { type: "thinking", thinking: "" }),
     assistant("u2", "msg1", { type: "text", text: "hi" }),
@@ -56,7 +58,7 @@ test("usage repeated across a message's lines is counted once, with the latest v
 });
 
 test("re-ingesting the same line is a no-op", () => {
-  const store = new Store(prices);
+  const store = new SessionStore(prices);
   const line = assistant("u1", "msg1", { type: "text", text: "hi" });
   store.ingest(parseLine(line)!);
   const again = store.ingest(parseLine(line)!);
@@ -65,14 +67,14 @@ test("re-ingesting the same line is a no-op", () => {
 });
 
 test("synthetic messages count no usage", () => {
-  const store = new Store(prices);
+  const store = new SessionStore(prices);
   store.ingest(parseLine(assistant("u1", "msg1", { type: "text", text: "err" }, usage(5, 5), "<synthetic>"))!);
   assert.equal(store.get("s1")?.session.usage.input, 0);
   assert.equal(store.get("s1")?.session.model, undefined);
 });
 
 test("unknown model makes the session cost null", () => {
-  const store = new Store(prices);
+  const store = new SessionStore(prices);
   store.ingest(parseLine(assistant("u1", "msg1", { type: "text", text: "a" }))!);
   store.ingest(parseLine(assistant("u2", "msg2", { type: "text", text: "b" }, usage(1, 1), "mystery"))!);
   assert.equal(store.get("s1")?.session.costUsd, null);
@@ -100,8 +102,9 @@ test("scanner reads incrementally, holds back partial lines and survives garbage
   const dir = path.join(root, "proj");
   await mkdir(dir);
   const file = path.join(dir, "s1.jsonl");
-  const store = new Store(prices);
-  const scanner = new Scanner(store);
+  const monitor = new Monitor(prices, new Bus());
+  const store = monitor.sessions;
+  const scanner = new Scanner(monitor);
 
   const line1 = assistant("u1", "msg1", { type: "text", text: "one" });
   const line2 = assistant("u2", "msg2", { type: "text", text: "two" });
@@ -114,4 +117,29 @@ test("scanner reads incrementally, holds back partial lines and survives garbage
   await scanner.readNew(file);
   assert.equal(store.get("s1")?.events.length, 2);
   assert.equal(store.get("s1")?.session.usage.output, 40);
+});
+
+test("thinking blocks are their own event kind", () => {
+  const parsed = parseLine(assistant("u1", "msg1", { type: "thinking", thinking: "secret plan" }));
+  assert.equal(parsed?.events[0]?.kind, "thinking");
+  assert.ok(!JSON.stringify(parsed).includes("secret plan"));
+});
+
+test("phase markers: api-request, compaction, turn end", () => {
+  const ts = "2026-01-01T00:00:05.000Z";
+  assert.deepEqual(parseLine(JSON.stringify({ type: "api-request", sessionId: "s1", timestamp: ts }))?.marker, { kind: "request" });
+  assert.deepEqual(
+    parseLine(JSON.stringify({ type: "system", subtype: "compact_boundary", sessionId: "s1", timestamp: ts, compactMetadata: { durationMs: 900 } }))?.marker,
+    { kind: "compacted", durationMs: 900 },
+  );
+  assert.deepEqual(parseLine(JSON.stringify({ type: "system", subtype: "stop_hook_summary", sessionId: "s1", timestamp: ts }))?.marker, { kind: "turn_end" });
+  assert.equal(parseLine(JSON.stringify({ type: "system", subtype: "something_new", sessionId: "s1", timestamp: ts })), null);
+});
+
+test("entrypoint comes from the main transcript", () => {
+  const line = JSON.parse(assistant("u1", "msg1", { type: "text", text: "hi" }));
+  line.entrypoint = "claude-desktop";
+  const store = new SessionStore(prices);
+  store.ingest(parseLine(JSON.stringify(line))!);
+  assert.equal(store.get("s1")?.session.entrypoint, "claude-desktop");
 });

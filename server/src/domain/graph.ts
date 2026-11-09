@@ -1,10 +1,9 @@
 import type { Event, Graph, GraphEdge, GraphItem, GraphNode, NodeStatus } from "@claude-monitor/shared";
-import type { SessionState } from "./store.js";
+import type { SessionState } from "./sessions.js";
 
 /** A container with more tool calls than this folds repeated tools into groups ("12 x Read"). */
 const GROUP_THRESHOLD = 8;
 const AGENT_RECENT_MS = 30_000;
-const AGENT_TOOLS = new Set(["Agent", "Task"]);
 
 const SESSION_NODE = "session";
 const turnId = (eventId: string): string => `turn:${eventId}`;
@@ -30,7 +29,13 @@ const newContainer = (nodeId: string): Container => ({ nodeId, tools: [], tokens
 
 const elapsed = (from: string, to: string): number => Date.parse(to) - Date.parse(from);
 
-export function buildGraph(state: SessionState, events: Event[], group: boolean, now: number = Date.now()): Graph {
+export function buildGraph(
+  state: SessionState,
+  events: Event[],
+  group: boolean,
+  stoppedAgents: ReadonlySet<string> = new Set(),
+  now: number = Date.now(),
+): Graph {
   const { session } = state;
   const results = new Map<string, Event>();
   for (const e of events) if (e.kind === "tool_result" && e.toolUseId) results.set(e.toolUseId, e);
@@ -136,7 +141,7 @@ export function buildGraph(state: SessionState, events: Event[], group: boolean,
     const parent = agentParent.get(agentId) ?? SESSION_NODE;
 
     const recentlyActive = container.lastTs !== undefined && now - Date.parse(container.lastTs) < AGENT_RECENT_MS;
-    const running = !state.stoppedAgents.has(agentId) && session.status === "active" && (recentlyActive || (use !== undefined && !result));
+    const running = !stoppedAgents.has(agentId) && session.status === "active" && (recentlyActive || (use !== undefined && !result));
     const status: NodeStatus = running ? "running" : result?.isError ? "error" : "ok";
     if (running) containerFor(parent).hasRunning = true;
 

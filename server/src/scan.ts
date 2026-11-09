@@ -1,12 +1,16 @@
 /** `npm run scan`: prints what the parser sees. `--check` compares against Claude Code's own cost. */
-import { PROJECTS_DIR } from "./config.js";
-import { loadPricing } from "./pricing.js";
-import { Scanner } from "./scanner.js";
-import { Store } from "./store.js";
+import { Bus } from "./bus.js";
+import { loadEnvFile, readConfig } from "./config.js";
+import { Monitor } from "./domain/monitor.js";
+import { loadPricing } from "./domain/pricing.js";
+import { Scanner } from "./ingest/scanner.js";
 
-const store = new Store(loadPricing());
-const scanner = new Scanner(store);
-const fileCount = await scanner.scanAll(PROJECTS_DIR);
+loadEnvFile();
+const monitor = new Monitor(loadPricing(), new Bus());
+monitor.quiet = true;
+const scanner = new Scanner(monitor);
+const fileCount = await scanner.scanAll(readConfig().projectsDir);
+const store = monitor.sessions;
 const sessions = store.listSessions();
 
 const money = (v: number | null | undefined): string => (v === null || v === undefined ? "n/a" : `$${v.toFixed(2)}`);

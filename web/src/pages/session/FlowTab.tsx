@@ -14,10 +14,10 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { totalTokens, type Graph, type GraphItem, type GraphNode, type GraphNodeData, type NodeStatus } from "@claude-monitor/shared";
-import { api, subscribe } from "../api";
-import { formatDuration, formatTokens } from "../format";
+import { useParams } from "react-router-dom";
+import { type Graph, type GraphItem, type GraphNode, type GraphNodeData, type NodeStatus } from "@claude-monitor/shared";
+import { api, subscribe } from "../../api";
+import { formatDuration, formatTokens } from "../../format";
 
 const NODE_WIDTH = 230;
 const NODE_HEIGHT = 74;
@@ -186,11 +186,8 @@ function FlowCanvas({ sessionId }: { sessionId: string }) {
   const { fitView, setCenter } = useReactFlow();
 
   const load = useCallback(() => {
-    fetch(`/api/sessions/${encodeURIComponent(sessionId)}/graph${group ? "" : "?group=0"}`)
-      .then((r) => {
-        if (!r.ok) throw new Error(String(r.status));
-        return r.json() as Promise<Graph>;
-      })
+    api
+      .graph(sessionId, group)
       .then((next) => {
         defaults.current ??= defaultExpanded(next);
         setGraph(next);
@@ -333,35 +330,11 @@ function FlowCanvas({ sessionId }: { sessionId: string }) {
   );
 }
 
-export function FlowPage() {
+export function FlowTab() {
   const { id = "" } = useParams();
-  const [title, setTitle] = useState<string>("");
-  const [usage, setUsage] = useState<string>("");
-
-  useEffect(() => {
-    api
-      .session(id)
-      .then(({ session }) => {
-        setTitle(session.title ?? session.cwd);
-        setUsage(`${formatTokens(totalTokens(session.usage))} tokens`);
-      })
-      .catch(() => undefined);
-  }, [id]);
-
   return (
-    <>
-      <div className="page-head">
-        <div>
-          <h1>{title || "Flow"}</h1>
-          <div className="muted">
-            <Link to={`/sessions/${id}`}>Back to session</Link>
-            {usage && ` · ${usage}`}
-          </div>
-        </div>
-      </div>
-      <ReactFlowProvider>
-        <FlowCanvas sessionId={id} />
-      </ReactFlowProvider>
-    </>
+    <ReactFlowProvider>
+      <FlowCanvas sessionId={id} />
+    </ReactFlowProvider>
   );
 }

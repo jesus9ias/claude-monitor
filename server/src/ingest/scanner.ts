@@ -1,12 +1,9 @@
 import { open, readdir, stat } from "node:fs/promises";
 import path from "node:path";
-import type { Event } from "@claude-monitor/shared";
-import { describeTranscript, parseLine, readSubagentMeta } from "./parser/jsonl.js";
-import type { SessionState, Store } from "./store.js";
+import type { Monitor } from "../domain/monitor.js";
+import { describeTranscript, parseLine, readSubagentMeta, type ParsedLine } from "./transcript.js";
 
 const NEWLINE = 0x0a;
-
-export type IngestListener = (state: SessionState, added: Event[]) => void;
 
 /** Reads transcripts incrementally. Keeps a byte offset per file; never reparses what it has read. */
 export class Scanner {
@@ -15,34 +12,34 @@ export class Scanner {
   private readonly rerun = new Set<string>();
   malformedLines = 0;
 
-  constructor(private readonly store: Store) {}
+  constructor(private readonly monitor: Monitor) {}
 
-  async scanAll(root: string, onIngest?: IngestListener): Promise<number> {
+  async scanAll(root: string): Promise<number> {
     const files = await listTranscripts(root);
-    for (const file of files) await this.readNew(file, onIngest);
+    for (const file of files) await this.readNew(file);
     return files.length;
   }
 
   /** Safe to call on every change event: overlapping calls for a file are coalesced. */
-  readNew(file: string, onIngest?: IngestListener): Promise<void> {
+  readNew(file: string): Promise<void> {
     const running = this.inFlight.get(file);
     if (running) {
       this.rerun.add(file);
       return running;
     }
-    const task = this.drain(file, onIngest).finally(() => this.inFlight.delete(file));
+    const task = this.drain(file).finally(() => this.inFlight.delete(file));
     this.inFlight.set(file, task);
     return task;
   }
 
-  private async drain(file: string, onIngest?: IngestListener): Promise<void> {
+  private async drain(file: string): Promise<void> {
     do {
       this.rerun.delete(file);
-      await this.readOnce(file, onIngest);
+      await this.readOnce(file);
     } while (this.rerun.has(file));
   }
 
-  private async readOnce(file: string, onIngest?: IngestListener): Promise<void> {
+  private async readOnce(file: string): Promise<void> {
     const ref = describeTranscript(file);
     if (!ref) return;
 
@@ -71,32 +68,28 @@ export class Scanner {
     if (end === -1) return;
     this.offsets.set(file, offset + end + 1);
 
-    const touched = new Map<SessionState, Event[]>();
+    const lines: ParsedLine[] = [];
     let firstTs: string | undefined;
-    for (const line of chunk.subarray(0, end).toString("utf8").split("\n")) {
-      if (!line.trim()) continue;
-      const parsed = parseLine(line, ref);
+    for (const raw of chunk.subarray(0, end).toString("utf8").split("\n")) {
+      if (!raw.trim()) continue;
+      const parsed = parseLine(raw, ref);
       if (!parsed) {
-        if (!isJson(line)) this.malformedLines++;
+        if (!isJson(raw)) this.malformedLines++;
         continue;
       }
       firstTs ??= parsed.ts;
-      const result = this.store.ingest(parsed);
-      if (!result) continue;
-      const list = touched.get(result.state) ?? [];
-      list.push(...result.added);
-      touched.set(result.state, list);
+      lines.push(parsed);
     }
 
     if (ref.agentId && firstTs) {
-      const state = this.store.ensure(ref.sessionId, firstTs);
       // The meta file can land after the first transcript line, so retry until it has content.
-      if (!state.agents.get(ref.agentId)?.description) {
-        this.store.linkAgent(state, ref.agentId, await readSubagentMeta(file));
+      if (!this.monitor.agentMeta(ref.sessionId, ref.agentId)?.description) {
+        this.monitor.linkAgent(ref.sessionId, ref.agentId, await readSubagentMeta(file), firstTs);
       }
-      const meta = state.agents.get(ref.agentId);
-      const result = this.store.ingest({
+      const meta = this.monitor.agentMeta(ref.sessionId, ref.agentId);
+      lines.push({
         sessionId: ref.sessionId,
+        agentId: ref.agentId,
         events: [
           {
             id: `subagent_start:${ref.agentId}`,
@@ -109,9 +102,8 @@ export class Scanner {
           },
         ],
       });
-      if (result?.added.length) touched.set(state, [...(touched.get(state) ?? []), ...result.added]);
     }
-    if (onIngest) for (const [state, added] of touched) onIngest(state, added);
+    if (lines.length) this.monitor.ingestLines(lines);
   }
 }
 

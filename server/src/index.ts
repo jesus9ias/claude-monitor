@@ -1,75 +1,115 @@
-import { buildApp } from "./app.js";
-import { HOST, PORT, PROJECTS_DIR, SESSIONS_DIR } from "./config.js";
-import { loadPricing } from "./pricing.js";
-import { ProcessMonitor } from "./procs.js";
-import { Scanner, type IngestListener } from "./scanner.js";
-import { SseHub } from "./sse.js";
-import { Store, type HookUpdate } from "./store.js";
-import { startWatcher } from "./watcher.js";
+/** Composition root: builds every piece and wires them. No logic of its own. */
+import { Bus } from "./bus.js";
+import { loadEnvFile, readConfig } from "./config.js";
+import { Monitor } from "./domain/monitor.js";
+import { loadPricing } from "./domain/pricing.js";
+import { QuotaService } from "./domain/quota.js";
+import { buildApp } from "./http/app.js";
+import { bridge, SseHub } from "./http/sse.js";
+import { StateDb } from "./infra/db.js";
+import { ProcessMonitor } from "./infra/procs.js";
+import { Scanner } from "./ingest/scanner.js";
+import { startWatcher } from "./ingest/watcher.js";
 
-const STATUS_TICK_MS = 5_000;
+const TICK_MS = 5_000;
 const PROCESS_POLL_MS = 3_000;
+const ACTIVITY_FLUSH_MS = 2_000;
 
-const store = new Store(loadPricing());
-const scanner = new Scanner(store);
+loadEnvFile();
+const config = readConfig();
+
+const bus = new Bus();
+const db = StateDb.open(config.dataDir);
+const monitor = new Monitor(loadPricing(), bus);
+const scanner = new Scanner(monitor);
 const sse = new SseHub();
+bridge(bus, sse);
+
+// Hook-driven activity survives restarts; transcript lines older than it will not override it.
+for (const [sessionId, snapshot] of db.loadActivity()) monitor.activity.restore(sessionId, snapshot);
 
 const began = Date.now();
-const files = await scanner.scanAll(PROJECTS_DIR);
-store.refreshStatuses();
-console.log(`Loaded ${store.listSessions().length} sessions from ${files} files in ${Date.now() - began} ms.`);
+monitor.quiet = true;
+const files = await scanner.scanAll(config.projectsDir);
 
-const onIngest: IngestListener = (state, added) => {
-  for (const event of added) sse.broadcast({ type: "event_added", event });
-  store.refreshStatuses();
-  if (state.session.cwd) sse.broadcast({ type: "session_updated", session: state.session });
-};
-
-const onHook = (hook: HookUpdate): void => {
-  const { state, added } = store.applyHook(hook);
-  for (const event of added) sse.broadcast({ type: "event_added", event });
-  store.refreshStatuses();
-  if (state.session.cwd) sse.broadcast({ type: "session_updated", session: state.session });
-};
-
-const monitor = new ProcessMonitor({
-  sessionsDir: SESSIONS_DIR,
-  sessionForCwd: (cwd) => store.sessionForCwd(cwd),
+const processes = new ProcessMonitor({
+  sessionsDir: config.sessionsDir,
+  sessionForCwd: (cwd) => monitor.sessions.sessionForCwd(cwd),
 });
-
-async function pollProcesses(): Promise<void> {
-  const changed = await monitor.poll();
-  if (!changed) return;
-  sse.broadcast({ type: "process_changed", processes: changed });
-  for (const session of store.applyProcesses(changed)) sse.broadcast({ type: "session_updated", session });
-  for (const session of store.refreshStatuses()) sse.broadcast({ type: "session_updated", session });
-}
-
 // Before the first request, so a live session never shows as ended just after a restart.
-await pollProcesses();
-store.refreshStatuses();
+const firstPoll = await processes.poll();
+if (firstPoll) monitor.applyProcesses(firstPoll);
+monitor.tick();
+monitor.quiet = false;
+console.log(`Loaded ${monitor.sessions.listSessions().length} sessions from ${files} files in ${Date.now() - began} ms.`);
 
-const app = buildApp({ store, sse, onHook, processes: () => monitor.list() });
-await app.listen({ host: HOST, port: PORT });
-console.log(`Claude Monitor on http://${HOST}:${PORT}`);
+// Persist activity in batches: hooks can fire many times a second.
+const dirtyActivity = new Set<string>();
+bus.on("activity_changed", (e) => dirtyActivity.add(e.sessionId));
+const flushActivity = (): void => {
+  if (!dirtyActivity.size) return;
+  const rows = [...dirtyActivity].flatMap((sessionId) => {
+    const snapshot = monitor.activity.snapshot(sessionId);
+    return snapshot ? [{ sessionId, snapshot }] : [];
+  });
+  dirtyActivity.clear();
+  try {
+    db.saveActivity(rows);
+  } catch (err) {
+    console.error(`Could not save activity: ${err instanceof Error ? err.message : "unknown error"}`);
+  }
+};
+setInterval(flushActivity, ACTIVITY_FLUSH_MS).unref();
 
-const stopWatcher = startWatcher(PROJECTS_DIR, scanner, onIngest);
+const quota = new QuotaService({
+  ...config.quota,
+  bus,
+  store: db,
+  isActive: () => monitor.isAnyActive(),
+});
+quota.start();
+console.log(
+  quota.configured
+    ? `Quota: reading from Anthropic (${config.quota.source}).`
+    : "Quota: no CLAUDE_CODE_OAUTH_TOKEN in .env; only the statusline feed can update it.",
+);
+
+const app = buildApp({
+  monitor,
+  sse,
+  processes: () => processes.list(),
+  quota: {
+    current: () => quota.current(),
+    configured: quota.configured,
+    alerts: config.quota.alerts,
+    refresh: () => quota.refresh(),
+    history: (since) => db.quotaHistory(since),
+    fromStatusline: (reading) => quota.fromStatusline(reading),
+  },
+});
+await app.listen({ host: config.host, port: config.port });
+console.log(`Claude Monitor on http://${config.host}:${config.port}`);
+
+const stopWatcher = startWatcher(config.projectsDir, scanner);
 // Anything written between the boot scan and the watcher starting.
-await scanner.scanAll(PROJECTS_DIR, onIngest);
+await scanner.scanAll(config.projectsDir);
 
-setInterval(() => {
-  for (const session of store.refreshStatuses()) sse.broadcast({ type: "session_updated", session });
-}, STATUS_TICK_MS).unref();
-
-setInterval(() => void pollProcesses(), PROCESS_POLL_MS).unref();
+setInterval(() => monitor.tick(), TICK_MS).unref();
+setInterval(async () => {
+  const changed = await processes.poll();
+  if (changed) monitor.applyProcesses(changed);
+}, PROCESS_POLL_MS).unref();
 
 let stopping = false;
 const shutdown = async (): Promise<void> => {
   if (stopping) return;
   stopping = true;
+  quota.stop();
   sse.closeAll();
   await stopWatcher();
   await app.close();
+  flushActivity();
+  db.close();
   process.exit(0);
 };
 process.on("SIGINT", shutdown);

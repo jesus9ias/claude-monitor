@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { totalTokens, type Session, type Stats, type StatsRange } from "@claude-monitor/shared";
+import { totalTokens, type Stats, type StatsRange } from "@claude-monitor/shared";
 import { api, subscribe } from "../api";
-import { CurrentTool, StatusBadge, Tile } from "../components/common";
+import { ActivityBadge, StatusBadge, Tile } from "../components/common";
 import { CostByDayChart } from "../components/CostByDayChart";
 import { formatAgo, formatCost, formatTokens, projectName, useNow } from "../format";
+import { useLive } from "../state/live";
 
 const RANGES: { value: StatsRange; label: string }[] = [
   { value: "today", label: "Today" },
@@ -14,8 +15,8 @@ const RANGES: { value: StatsRange; label: string }[] = [
 const STATS_REFRESH_MS = 2000;
 
 export function SessionsPage() {
-  const [sessions, setSessions] = useState<Session[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const sessions = useLive((s) => s.sessions);
+  const error = useLive((s) => s.sessionsError);
   const [range, setRange] = useState<StatsRange>("7d");
   const [stats, setStats] = useState<Stats | null>(null);
   const navigate = useNavigate();
@@ -28,38 +29,19 @@ export function SessionsPage() {
   const loadStats = useCallback(() => {
     api.stats(rangeRef.current).then(setStats).catch(() => undefined);
   }, []);
-  const loadSessions = useCallback(() => {
-    api
-      .sessions()
-      .then((s) => {
-        setSessions(s);
-        setError(null);
-      })
-      .catch(() => setError("Can't reach the monitor server."));
-  }, []);
 
-  useEffect(() => {
-    loadSessions();
-    return subscribe(
-      (message) => {
+  // Sessions come from the live store; stats follow them, debounced.
+  useEffect(
+    () =>
+      subscribe((message) => {
         if (message.type !== "session_updated") return;
-        const updated = message.session;
-        setSessions((current) => {
-          if (!current) return current;
-          const others = current.filter((s) => s.id !== updated.id);
-          return [updated, ...others].sort((a, b) => b.lastEventAt.localeCompare(a.lastEventAt));
-        });
         statsTimer.current ??= setTimeout(() => {
           statsTimer.current = null;
           loadStats();
         }, STATS_REFRESH_MS);
-      },
-      () => {
-        loadSessions();
-        loadStats();
-      },
-    );
-  }, [loadSessions, loadStats]);
+      }, loadStats),
+    [loadStats],
+  );
 
   useEffect(loadStats, [range, loadStats]);
 
@@ -121,7 +103,7 @@ export function SessionsPage() {
                 <tr key={s.id} tabIndex={0} onClick={() => navigate(`/sessions/${s.id}`)} onKeyDown={(e) => e.key === "Enter" && navigate(`/sessions/${s.id}`)}>
                   <td>
                     <StatusBadge status={s.status} />
-                    <CurrentTool current={s.current} now={now} />
+                    <ActivityBadge activity={s.activity} now={now} />
                   </td>
                   <td className="project">
                     <div>{projectName(s.cwd)}</div>

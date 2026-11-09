@@ -1,12 +1,20 @@
 # Claude Monitor
 
-A local dashboard for what Claude Code is doing now and has done: sessions, tokens and estimated cost, running tools, processes, git state, and a flow diagram of each session. It reads Claude Code's own files on your machine, listens only on `127.0.0.1`, and sends nothing anywhere.
+A local dashboard for Claude Code. It shows what every session is doing right now and what it has done:
+- the live phase: thinking, writing, which tool, which subagents
+- tokens and estimated cost
+- the flow of each session
+- git state
+- processes
+- the subscription's 5-hour and weekly quota
 
-See [spec.md](spec.md) for the original design.
+It reads Claude Code's own files on your machine and listens only on `127.0.0.1`. Its only outbound call is the optional quota request to Anthropic.
+
+The design and its rules are in [spec.md](spec.md).
 
 ## Run it
 
-Needs Node 20 or later.
+Needs Node 22.13 or later.
 
 ```bash
 npm install
@@ -24,25 +32,41 @@ For development, with the server on 4317 and Vite on 5173:
 npm run dev
 ```
 
-## Hooks
+## Configure
 
-Without hooks the dashboard still works, but it can only guess status from transcript activity. With them, tool calls show up within about a second and status changes at once.
+Copy `.env.example` to `.env` and fill in what you need. Every value is optional. `.env` is git-ignored: keep it out of commits and out of any AI assistant's reach.
+
+The Quota page (`/quota`) shows:
+- what is left of each window
+- the pace at which you are using it
+- a 7-day history
+- which sessions used the current 5-hour window
+
+It can notify you in the browser at 20% and 5% left (`CLAUDE_MONITOR_QUOTA_ALERTS`). Each session's Pipeline tab animates where Claude is in its loop; click a block for details.
+
+For the quota, set `CLAUDE_CODE_OAUTH_TOKEN`. Get one with `claude setup-token`:
+- With a token that has the `user:profile` scope, the monitor reads the same numbers as `/usage`, for free.
+- With an inference-only token, it falls back to a 1-token request whose response headers carry the numbers. That request spends a sliver of your 5-hour window.
+
+## Hooks and statusline
+
+Without hooks the dashboard still works, but it can only infer activity from the transcripts. With them, phase and tool changes show up within about a second.
 
 ```bash
-npm run hooks:install
+npm run hooks:install -- --check
 ```
-
-That only prints the config. To change `~/.claude/settings.json`, which applies to every Claude Code session on this machine:
 
 ```bash
 npm run hooks:install -- --write
 ```
 
+Add `--statusline` to also install a statusline that feeds the quota from CLI sessions, with no token needed. It does not replace a statusline you already have.
+
 ```bash
 npm run hooks:install -- --uninstall
 ```
 
-Both back up the file first and leave your other settings and hooks alone. The hooks run in the background and ignore failures, so a stopped monitor doesn't affect Claude Code.
+Each command backs up `~/.claude/settings.json` first and leaves your other settings alone. The hooks run in the background and ignore failures, so a stopped monitor doesn't affect Claude Code. Re-run `--write` after updating the monitor if `--check` says the hooks are outdated.
 
 ## Other commands
 
@@ -55,18 +79,19 @@ Both back up the file first and leave your other settings and hooks alone. The h
 
 ## Good to know
 
-- **Cost is an estimate.** Prices are in [server/src/pricing.json](server/src/pricing.json), in USD per million tokens, and were copied from Anthropic's pricing page on 2026-11-05. A session using a model with no price shows `n/a`.
-- **Cost assumes API pricing.** On a subscription plan, read it as what the usage would cost on the API, not what you paid.
-- **Tool durations can run long.** A call's time starts when it appears in the transcript. In a batch of parallel calls, that can include the time the model spent writing the later ones.
-- **Hook data isn't kept across restarts.** Sessions, tokens and tool calls are rebuilt from the transcripts, but hook events and current activity are not. After a restart, status falls back to the age rule until the next hook arrives.
-- **macOS and Linux are untested.** Process stats use `ps` and `lsof` or `/proc` there, and this has only been run on Windows.
+- **Cost is an estimate at API prices.** Prices are in [server/src/domain/pricing.json](server/src/domain/pricing.json). On a subscription, read it as what the usage would cost on the API.
+- **Phases are known at block boundaries.** Claude Code writes a transcript line when a block is complete, so the monitor knows when thinking, writing or a tool starts and ends, not each token.
+- **State that survives restarts** (activity from hooks, quota history) is in `data/monitor.db`. Delete it to start fresh; transcripts rebuild everything else.
+- **macOS and Linux are untested.** Process stats use `ps` and `lsof` or `/proc` there. It has only been run on Windows.
 
 ## Layout
 
 | Path | Purpose |
 |---|---|
-| `shared/` | Types used by the server and the UI |
-| `server/src/parser/jsonl.ts` | The only code that knows the transcript format. Fix it here when Claude Code changes it |
-| `server/src/hooks.ts` | The only code that knows the hook payload format |
+| `shared/` | Types and helpers used by server and UI: activity phases, tool classifier, quota, stream protocol |
+| `server/src/ingest/` | Readers of outside formats: transcripts, hooks, statusline. Fix these when Claude Code changes a format |
+| `server/src/domain/` | State and rules: sessions, activity, status, quota, graph, stats, pricing |
+| `server/src/infra/` | SQLite, git, processes, the Anthropic client |
+| `server/src/http/` | REST routes and the event stream |
 | `web/` | The React UI |
-| `scripts/install-hooks.ts` | The hook installer |
+| `scripts/` | Hook and statusline installer, statusline command |

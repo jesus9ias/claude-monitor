@@ -3,7 +3,7 @@ import { mkdtemp } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
-import { gitInfo, parseStatus, parseWorktrees } from "../src/git.js";
+import { gitInfo, parseStatus, parseWorktrees } from "../src/infra/git.js";
 
 test("status header forms", () => {
   assert.deepEqual(parseStatus("## main...origin/main [ahead 2, behind 1]\n M a.ts\n?? b.ts\n"), {

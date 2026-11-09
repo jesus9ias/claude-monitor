@@ -1,0 +1,241 @@
+.flow-bar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px 16px;
+}
+
+.flow-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.flow-wrap {
+  position: relative;
+  height: calc(100vh - 190px);
+  min-height: 420px;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.flow-wrap .react-flow {
+  --xy-background-color: var(--surface);
+}
+
+.flow-node {
+  width: 230px;
+  height: 74px;
+  padding: 7px 10px;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--baseline);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.flow-node:hover {
+  border-color: var(--accent);
+}
+
+.flow-node-session {
+  border: 2px solid var(--text-muted);
+}
+
+.flow-node-subagent {
+  border-left: 4px solid var(--series-7);
+}
+
+.flow-node-group {
+  border-style: double;
+  border-width: 3px;
+}
+
+.flow-node.failed {
+  border-color: var(--critical);
+}
+
+.flow-node.running {
+  border-color: var(--good);
+  animation: node-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes node-pulse {
+  50% {
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--good) 35%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flow-node.running {
+    animation: none;
+    box-shadow: 0 0 0 2px var(--good);
+  }
+}
+
+.flow-node-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+}
+
+.flow-node-label {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.flow-node-summary,
+.drawer-item-summary {
+  overflow: hidden;
+  color: var(--text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.flow-node-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.flow-toggle {
+  margin-left: auto;
+  padding: 0 6px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.flow-toggle:hover {
+  background: var(--hover);
+}
+
+.node-status {
+  flex: none;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.node-status::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 4px;
+  border-radius: 50%;
+  vertical-align: 1px;
+  background: var(--neutral);
+}
+
+.node-status-ok::before {
+  background: var(--good);
+}
+
+.node-status-running::before {
+  background: var(--warning);
+}
+
+.node-status-error {
+  color: var(--critical);
+}
+
+.node-status-error::before {
+  background: var(--critical);
+}
+
+.drawer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  width: min(420px, 100%);
+  padding: 14px 16px;
+  overflow-y: auto;
+  background: var(--surface);
+  border-left: 1px solid var(--baseline);
+  box-shadow: -4px 0 16px rgba(0, 0, 0, 0.12);
+}
+
+.drawer-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.drawer-head h2 {
+  overflow-wrap: anywhere;
+}
+
+.drawer h3 {
+  margin: 14px 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.drawer pre {
+  margin: 4px 0;
+  padding: 8px;
+  max-height: 240px;
+  overflow: auto;
+  background: var(--hover);
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.drawer-facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 12px;
+  margin: 0;
+}
+
+.drawer-facts dt {
+  color: var(--text-muted);
+}
+
+.drawer-facts dd {
+  margin: 0;
+}
+
+.drawer-summary {
+  overflow-wrap: anywhere;
+}
+
+.drawer-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.drawer-items li {
+  padding: 4px 0;
+  border-bottom: 1px solid var(--grid);
+}
+
+.drawer-items summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+}
+

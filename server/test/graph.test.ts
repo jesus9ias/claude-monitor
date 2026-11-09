@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { Event, Graph } from "@claude-monitor/shared";
-import { buildGraph } from "../src/graph.js";
-import { Store } from "../src/store.js";
+import { Bus } from "../src/bus.js";
+import { buildGraph } from "../src/domain/graph.js";
+import { Monitor } from "../src/domain/monitor.js";
 
 let clock = 0;
 function event(kind: Event["kind"], fields: Partial<Event> = {}): Event {
@@ -17,18 +18,20 @@ function event(kind: Event["kind"], fields: Partial<Event> = {}): Event {
   };
 }
 
-function build(events: Event[], configure?: (store: Store) => void, group = true): Graph {
-  const store = new Store({});
-  const state = store.ensure("s", events[0]!.ts);
+function build(events: Event[], configure?: (m: Monitor) => void, group = true): Graph {
+  const m = new Monitor({}, new Bus());
+  const state = m.sessions.ensure("s", events[0]!.ts);
   state.session.cwd = "/repo";
-  configure?.(store);
-  store.ingest({ sessionId: "s", events });
-  store.refreshStatuses(Date.parse(events[events.length - 1]!.ts) + 3_600_000);
-  return buildGraph(state, store.sortedEvents(state), group);
+  configure?.(m);
+  const end = Date.parse(events[events.length - 1]!.ts) + 3_600_000;
+  m.ingestLines([{ sessionId: "s", events }], end);
+  m.tick(end);
+  return buildGraph(state, m.sessions.sortedEvents(state), group);
 }
 
 const tool = (id: string, name = "Read") => event("tool_use", { toolName: name, toolUseId: id });
 const result = (id: string, isError?: boolean) => event("tool_result", { toolUseId: id, isError });
+const events0 = () => new Date(Date.UTC(2026, 0, 1)).toISOString();
 const byType = (g: Graph, type: string) => g.nodes.filter((n) => n.type === type);
 const parentOf = (g: Graph, id: string) => g.edges.find((e) => e.target === id)?.source;
 
@@ -56,7 +59,7 @@ test("an Agent call becomes a subagent node that owns the sidechain's tools", ()
       event("tool_result", { agentId: "a1", isSidechain: true, toolUseId: "g1" }),
       result("agent1"),
     ],
-    (store) => store.linkAgent(store.get("s")!, "a1", { toolUseId: "agent1", agentType: "Explore", description: "Find things" }),
+    (m) => m.linkAgent("s", "a1", { toolUseId: "agent1", agentType: "Explore", description: "Find things" }, events0()),
   );
   const [agent] = byType(g, "subagent");
   assert.equal(agent?.data.label, "Explore");
@@ -93,16 +96,16 @@ test("8 calls or fewer stay individual", () => {
 });
 
 test("an unanswered tool is running only while the session is active", () => {
-  const store = new Store({});
+  const m = new Monitor({}, new Bus());
   const e = [event("user"), tool("t1")];
-  const state = store.ensure("s", e[0]!.ts);
+  const state = m.sessions.ensure("s", e[0]!.ts);
   state.session.cwd = "/repo";
-  store.ingest({ sessionId: "s", events: e });
+  m.ingestLines([{ sessionId: "s", events: e }], Date.parse(e[1]!.ts));
 
-  store.refreshStatuses(Date.parse(e[1]!.ts) + 1000);
+  m.tick(Date.parse(e[1]!.ts) + 1000);
   assert.equal(byType(buildGraph(state, state.events, true), "tool")[0]?.data.status, "running");
 
-  store.refreshStatuses(Date.parse(e[1]!.ts) + 3_600_000);
+  m.tick(Date.parse(e[1]!.ts) + 3_600_000);
   assert.equal(byType(buildGraph(state, state.events, true), "tool")[0]?.data.status, undefined);
 });
 

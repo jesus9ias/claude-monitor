@@ -9,7 +9,9 @@
  * Observed quirks:
  *   - One assistant API message spans several lines, one per content block. Every line repeats the
  *     same message.id and usage, and a later line can carry updated usage. Summing lines double-counts.
- *   - Many line types are not conversation (attachment, api-request, mode, ...) and are ignored.
+ *   - Many line types are not conversation (attachment, mode, ...) and are ignored. A few carry no
+ *     content but mark a phase: api-request (a call to the model went out), system/compact_boundary
+ *     (compaction finished), system/stop_hook_summary (the turn ended).
  */
 import { readFile } from "node:fs/promises";
 import path from "node:path";
@@ -31,11 +33,22 @@ export interface ParsedMessage {
   ts: string;
 }
 
+/** A line with no conversation content that still says where the session is in its loop. */
+export type TranscriptMarker =
+  | { kind: "request" }
+  | { kind: "turn_end" }
+  | { kind: "compacted"; durationMs?: number }
+  | { kind: "api_error" };
+
 export interface ParsedLine {
   sessionId?: string;
   cwd?: string;
   gitBranch?: string;
+  entrypoint?: string;
   ts?: string;
+  /** Set for subagent transcripts. */
+  agentId?: string;
+  marker?: TranscriptMarker;
   events: Event[];
   message?: ParsedMessage;
   title?: { text: string; source: "custom" | "ai" };
@@ -95,6 +108,10 @@ export function parseLine(line: string, ref?: TranscriptRef): ParsedLine | null 
         return titleLine(sessionId, j.customTitle, "custom");
       case "ai-title":
         return titleLine(sessionId, j.aiTitle, "ai");
+      case "api-request":
+        return markerLine(j, sessionId, ref, { kind: "request" });
+      case "system":
+        return parseSystemLine(j, sessionId, ref);
       case "cost-state":
         return typeof j.totalCostUSD === "number"
           ? { sessionId, events: [], reportedCostUsd: j.totalCostUSD }
@@ -104,6 +121,27 @@ export function parseLine(line: string, ref?: TranscriptRef): ParsedLine | null 
     }
   } catch {
     return null;
+  }
+}
+
+function markerLine(j: any, sessionId: string | undefined, ref: TranscriptRef | undefined, marker: TranscriptMarker): ParsedLine | null {
+  const ts = str(j.timestamp);
+  if (!sessionId || !ts) return null;
+  return { sessionId, ts, agentId: ref?.agentId ?? str(j.agentId), events: [], marker };
+}
+
+function parseSystemLine(j: any, sessionId: string | undefined, ref?: TranscriptRef): ParsedLine | null {
+  switch (j.subtype) {
+    case "compact_boundary": {
+      const durationMs = j.compactMetadata?.durationMs;
+      return markerLine(j, sessionId, ref, { kind: "compacted", durationMs: typeof durationMs === "number" ? durationMs : undefined });
+    }
+    case "stop_hook_summary":
+      return markerLine(j, sessionId, ref, { kind: "turn_end" });
+    case "api_error":
+      return markerLine(j, sessionId, ref, { kind: "api_error" });
+    default:
+      return null;
   }
 }
 
@@ -120,7 +158,9 @@ function parseConversationLine(j: any, sessionId: string | undefined, ref?: Tran
     sessionId,
     cwd: str(j.cwd),
     gitBranch: str(j.gitBranch),
+    entrypoint: str(j.entrypoint),
     ts,
+    agentId: ref?.agentId ?? str(j.agentId),
     events: [],
   };
   const base = {
@@ -146,7 +186,7 @@ function parseConversationLine(j: any, sessionId: string | undefined, ref?: Tran
       if (block.type === "text") {
         out.events.push({ ...base, id: id2, kind: "assistant", model: assistantModel, summary: clip(str(block.text) ?? "") });
       } else if (block.type === "thinking") {
-        out.events.push({ ...base, id: id2, kind: "assistant", model: assistantModel, summary: "(thinking)" });
+        out.events.push({ ...base, id: id2, kind: "thinking", model: assistantModel, summary: "(thinking)" });
       } else if (block.type === "tool_use") {
         const name = str(block.name) ?? "unknown";
         out.events.push({

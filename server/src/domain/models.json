@@ -1,0 +1,6 @@
+{
+  "_comment": "Context window per model, in tokens. Ids match pricing.json; a dated suffix is stripped. A session seen using more than its window is treated as running the 1M-token variant.",
+  "default": 200000,
+  "extended": 1000000,
+  "models": {}
+}

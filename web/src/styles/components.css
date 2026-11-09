@@ -1,0 +1,305 @@
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  min-width: 0;
+}
+
+.filter-row {
+  display: flex;
+  gap: 12px;
+}
+
+.segmented {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.segmented button {
+  border: 0;
+  background: none;
+  padding: 5px 12px;
+  color: var(--text-secondary);
+}
+
+.segmented button:hover {
+  background: var(--hover);
+}
+
+.segmented button.selected {
+  color: var(--text);
+  font-weight: 600;
+  background: var(--hover);
+}
+
+.ghost {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: none;
+  padding: 4px 10px;
+  color: var(--text-secondary);
+}
+
+.ghost:hover {
+  background: var(--hover);
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.tile {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+
+.tile-label,
+.tile-sub,
+.muted {
+  color: var(--text-muted);
+}
+
+.tile-label,
+.tile-sub {
+  font-size: 12px;
+}
+
+.tile-value {
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.page-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.page-head .muted {
+  overflow-wrap: anywhere;
+}
+
+.chart-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.chart-head h2 {
+  margin: 0;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex: none;
+}
+
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+  gap: 16px;
+}
+
+.small-chart {
+  margin: 0;
+  min-width: 0;
+}
+
+.small-chart figcaption {
+  margin-bottom: 6px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.chart-tooltip {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.chart-tooltip-title {
+  margin-bottom: 4px;
+  color: var(--text-secondary);
+}
+
+.chart-tooltip-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chart-tooltip-row strong {
+  margin-left: auto;
+  padding-left: 16px;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-tooltip-row.total {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--grid);
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--baseline);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  text-align: left;
+  white-space: nowrap;
+}
+
+td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--grid);
+  vertical-align: top;
+}
+
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+table.rows tbody tr {
+  cursor: pointer;
+}
+
+table.rows tbody tr:hover {
+  background: var(--hover);
+}
+
+.project {
+  max-width: 360px;
+}
+
+.ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.activity {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.head-status {
+  flex: none;
+  text-align: right;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.dot-active {
+  background: var(--good);
+}
+
+.dot-idle {
+  background: var(--warning);
+}
+
+.dot-ended {
+  background: var(--neutral);
+}
+
+.flow-link {
+  display: block;
+  margin-top: 4px;
+}
+
+
+.activity-waiting_permission {
+  color: var(--warning);
+}
+
+/* Quota readout in the top bar. */
+.quota {
+  margin-left: auto;
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.quota-window strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.quota-good strong {
+  color: var(--good);
+}
+
+.quota-warning strong {
+  color: var(--warning);
+}
+
+.quota-critical strong {
+  color: var(--critical);
+}
+
+.quota-stale {
+  padding: 0 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-muted);
+}
