@@ -21,6 +21,9 @@
   --series-5: #e87ba4;
   --series-6: #008300;
   --series-7: #6250d6;
+  --series-8: #0b9bb5;
+  --series-9: #9c6b3c;
+  --series-10: #b8323c;
   --series-other: #898781;
 }
 
@@ -44,6 +47,9 @@
     --series-5: #d55181;
     --series-6: #008300;
     --series-7: #9085e9;
+    --series-8: #2fb4cc;
+    --series-9: #b5844f;
+    --series-10: #d9545d;
   }
 }
 
