@@ -26,6 +26,8 @@ npm run build && npm start
 
 Then open <http://127.0.0.1:4317>.
 
+To use another port, set `CLAUDE_MONITOR_PORT` in `.env`, run `npm run hooks:install -- --write` (add `--statusline` if you use it), and restart the monitor and any open Claude Code sessions.
+
 For development, with the server on 4317 and Vite on 5173:
 
 ```bash

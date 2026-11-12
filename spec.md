@@ -291,7 +291,8 @@ Client state: `web/src/state/live.ts` holds the session list, quota and meta for
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `CLAUDE_MONITOR_PORT` | `4317` | Server port |
+| `CLAUDE_MONITOR_PORT` | `4317` | Server port. Also read by the installer, which bakes it into the hooks and the statusline command, and by Vite's proxy |
+| `CLAUDE_MONITOR_WEB_PORT` | `5173` | Vite dev server port (`npm run dev`) |
 | `CLAUDE_CONFIG_DIR` | `~/.claude` | Claude Code config dir |
 | `CLAUDE_MONITOR_PROJECTS_DIR` | `<config>/projects` | Transcripts |
 | `CLAUDE_MONITOR_SESSIONS_DIR` | `<config>/sessions` | Live session registry |
@@ -318,7 +319,7 @@ npm test                          # server tests
 npm run typecheck                 # all packages
 ```
 
-The installer only touches what it added. It finds its hooks by the monitor URL and its statusline by a marker. It does not overwrite an existing statusline; it explains how to forward that one to the monitor instead.
+The installer only touches what it added. It finds its hooks by their `curl … http://127.0.0.1:<port>/event` command on any port, and its statusline by a marker. So after a port change, `--write` moves everything to the new port, and `--check` reports hooks or a statusline that point elsewhere. It does not overwrite an existing statusline; it explains how to forward that one to the monitor instead.
 
 ## 12. Planned features
 

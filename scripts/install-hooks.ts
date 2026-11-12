@@ -11,13 +11,19 @@ import { copyFile, readFile, rename, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadEnvFile, readConfig } from "../server/src/config.js";
 import { HOOK_EVENTS_WITH_MATCHER, HOOK_EVENTS_WITHOUT_MATCHER } from "../server/src/ingest/hooks.js";
 
-const PORT = Number(process.env.CLAUDE_MONITOR_PORT ?? 4317);
+// Same configuration as the server: `.env` first, real environment variables win.
+loadEnvFile();
+const config = readConfig();
+const PORT = config.port;
 const URL_MARKER = `http://127.0.0.1:${PORT}/event`;
+/** Our hooks on any port, so a port change replaces them instead of leaving stale copies. */
+const OUR_HOOK = /curl\b.*http:\/\/127\.0\.0\.1:(\d+)\/event\b/;
 const STATUSLINE_SCRIPT = fileURLToPath(new URL("./statusline.mjs", import.meta.url));
 const STATUSLINE_MARKER = "claude-monitor";
-const SETTINGS = path.join(process.env.CLAUDE_CONFIG_DIR ?? path.join(os.homedir(), ".claude"), "settings.json");
+const SETTINGS = path.join(config.claudeDir, "settings.json");
 
 /** -m 1 and `|| true` keep a stopped server harmless; async means Claude never waits on curl. */
 const handler = {
@@ -29,7 +35,8 @@ const handler = {
 
 const statusLine = {
   type: "command",
-  command: `node "${STATUSLINE_SCRIPT.replace(/\\/g, "/")}" # ${STATUSLINE_MARKER}`,
+  // The port is baked in: Claude Code runs this without the monitor's environment.
+  command: `node "${STATUSLINE_SCRIPT.replace(/\\/g, "/")}" --port ${PORT} # ${STATUSLINE_MARKER}`,
 };
 
 interface HookGroup {
@@ -51,7 +58,19 @@ function buildHooks(): HooksBlock {
   return hooks;
 }
 
-const isOurs = (group: HookGroup): boolean => group.hooks?.some((h) => h.command?.includes(URL_MARKER)) ?? false;
+const hookPort = (group: HookGroup): number | undefined => {
+  for (const h of group.hooks ?? []) {
+    const m = h.command ? OUR_HOOK.exec(h.command) : null;
+    if (m) return Number(m[1]);
+  }
+  return undefined;
+};
+const isOurs = (group: HookGroup): boolean => hookPort(group) !== undefined;
+const statusLinePort = (s: Settings["statusLine"]): number | undefined => {
+  const m = s?.command ? /--port (\d+)/.exec(s.command) : null;
+  // Installed before the port was baked in: it always used the default.
+  return m ? Number(m[1]) : 4317;
+};
 const isOurStatusLine = (s: Settings["statusLine"]): boolean => Boolean(s?.command?.includes(STATUSLINE_MARKER));
 
 function removeOurs(existing: HooksBlock): HooksBlock {
@@ -92,15 +111,25 @@ async function update(change: (settings: Settings) => void): Promise<void> {
 
 async function check(): Promise<void> {
   const { settings } = await readSettings();
-  const installed = new Set(Object.entries(settings.hooks ?? {}).filter(([, groups]) => groups.some(isOurs)).map(([name]) => name));
+  const ours = Object.entries(settings.hooks ?? {}).flatMap(([name, groups]) => groups.filter(isOurs).map((g) => ({ name, port: hookPort(g)! })));
+  const installed = new Set(ours.map((h) => h.name));
+  const ports = [...new Set(ours.map((h) => h.port))];
   const wanted = [...HOOK_EVENTS_WITHOUT_MATCHER, ...HOOK_EVENTS_WITH_MATCHER];
   const missing = wanted.filter((n) => !installed.has(n));
   const extra = [...installed].filter((n) => !wanted.includes(n));
+  const wrongPort = ports.filter((p) => p !== PORT);
+  console.log(`Monitor port: ${PORT}.`);
   if (!installed.size) console.log("Hooks: not installed.");
+  else if (wrongPort.length) console.log(`Hooks: point to port ${wrongPort.join(", ")}. Run with --write to move them to ${PORT}.`);
   else if (!missing.length && !extra.length) console.log("Hooks: up to date.");
   else console.log(`Hooks: outdated.${missing.length ? ` Missing: ${missing.join(", ")}.` : ""}${extra.length ? ` Obsolete: ${extra.join(", ")}.` : ""} Run with --write.`);
   const sl = settings.statusLine;
-  console.log(`Statusline feed: ${isOurStatusLine(sl) ? "installed" : sl ? "not installed (another statusline is set)" : "not installed"}.`);
+  if (isOurStatusLine(sl)) {
+    const p = statusLinePort(sl);
+    console.log(p === PORT ? "Statusline feed: installed." : `Statusline feed: points to port ${p}. Run with --write --statusline to move it to ${PORT}.`);
+  } else {
+    console.log(`Statusline feed: ${sl ? "not installed (another statusline is set)" : "not installed"}.`);
+  }
 }
 
 const args = process.argv.slice(2);
@@ -131,6 +160,7 @@ if (args.includes("--check")) {
   });
   console.log("Installed. It applies to Claude Code sessions started from now on.");
 } else {
+  console.log(`Monitor port: ${PORT} (CLAUDE_MONITOR_PORT in .env).\n`);
   console.log(JSON.stringify({ hooks: buildHooks() }, null, 2));
   console.log("\nRun with --write to merge this into your settings (add --statusline for the quota feed).");
 }
