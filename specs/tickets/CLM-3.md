@@ -2,7 +2,7 @@
 id: CLM-3                       # assigned by `flow new`, never by hand
 title: Group the session table by project
 type: feature                   # feature | change | bug | refactor | chore
-status: validating               # draft | approved | in_progress | validating | done | blocked | cancelled
+status: done               # draft | approved | in_progress | validating | done | blocked | cancelled
 priority: medium           # low | medium | high | critical
 
 # Placement
@@ -54,11 +54,11 @@ See `user-interface.md#sessions-page`: the session table is one flat list from t
 - Works at 375 px, follows the system theme, and any collapse animation respects reduced motion.
 
 ### Checklist
-- [ ] C1 — The toggle switches between History (unchanged table) and By project · verify: manual · impl: no · spec: no
-- [ ] C2 — By project groups by full cwd, with header totals (sessions, active, tokens, cache, cost, last activity) and groups ordered by latest activity · verify: manual · impl: no · spec: no
-- [ ] C3 — Groups collapse and expand by mouse and keyboard; view and collapsed groups survive a reload · verify: manual · impl: no · spec: no
-- [ ] C4 — Live updates move sessions and groups without losing the chosen view or collapsed state · verify: manual · impl: no · spec: no
-- [ ] C5 — Layout works at 375 px in light and dark themes · verify: manual · impl: no · spec: no
+- [x] C1 — The toggle switches between History (unchanged table) and By project · verify: manual · impl: yes · spec: yes
+- [x] C2 — By project groups by full cwd, with header totals (sessions, active, tokens, cache, cost, last activity) and groups ordered by latest activity · verify: manual · impl: yes · spec: yes
+- [x] C3 — Groups collapse and expand by mouse and keyboard; view and collapsed groups survive a reload · verify: manual · impl: yes · spec: yes
+- [x] C4 — Live updates move sessions and groups without losing the chosen view or collapsed state · verify: manual · impl: yes · spec: yes
+- [x] C5 — Layout works at 375 px in light and dark themes · verify: manual · impl: yes · spec: yes
 - [x] C6 — `npm run build` passes · verify: command(npm run build) · impl: yes · spec: yes
 
 ## Scenarios (after state)
@@ -99,3 +99,14 @@ Append-only. One row per change to the ticket, always with a reason. Written by 
 | 2026-11-13 | item | C6.spec: no → yes | No spec content for the build; sessions-page section updated |
 | 2026-11-13 | set | claude_md: pending → unchanged | UI-only change inside an existing page; no new command, folder or convention |
 | 2026-11-13 | status | status: in_progress → validating | Code and spec done; manual items C1-C5 await the author |
+| 2026-11-13 | item | C1.impl: no → yes | Author confirmed in chat after checking the Sessions page |
+| 2026-11-13 | item | C1.spec: no → yes | user-interface.md#sessions-page already synced |
+| 2026-11-13 | item | C2.impl: no → yes | Author confirmed in chat after checking the Sessions page |
+| 2026-11-13 | item | C2.spec: no → yes | user-interface.md#sessions-page already synced |
+| 2026-11-13 | item | C3.impl: no → yes | Author confirmed in chat after checking the Sessions page |
+| 2026-11-13 | item | C3.spec: no → yes | user-interface.md#sessions-page already synced |
+| 2026-11-13 | item | C4.impl: no → yes | Author confirmed in chat after checking the Sessions page |
+| 2026-11-13 | item | C4.spec: no → yes | user-interface.md#sessions-page already synced |
+| 2026-11-13 | item | C5.impl: no → yes | Author confirmed in chat after checking the Sessions page |
+| 2026-11-13 | item | C5.spec: no → yes | user-interface.md#sessions-page already synced |
+| 2026-11-13 | status | status: validating → done | All items verified; C1-C5 confirmed by the author |
