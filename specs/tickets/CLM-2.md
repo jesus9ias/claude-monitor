@@ -2,7 +2,7 @@
 id: CLM-2                       # assigned by `flow new`, never by hand
 title: Context window comes from the model, not only from observed usage
 type: bug                   # feature | change | bug | refactor | chore
-status: validating               # draft | approved | in_progress | validating | done | blocked | cancelled
+status: done               # draft | approved | in_progress | validating | done | blocked | cancelled
 priority: medium           # low | medium | high | critical
 
 # Placement
@@ -50,7 +50,7 @@ See `user-interface.md#pipeline-tab` and `interfaces.md#pipeline-stats` (`@sc-pi
 ### Checklist
 - [x] C1 — A listed model (for example `claude-opus-5-5`, also with a dated suffix) gets its window from models.json before any usage is seen · verify: test · impl: yes · spec: yes
 - [x] C2 — An unlisted model keeps the 200K default and still moves to 1M once seen above it · verify: test · impl: yes · spec: yes
-- [ ] C3 — The Pipeline tab shows a 1M window for a live Opus 5.5 session under 200K · verify: manual · impl: no · spec: no
+- [x] C3 — The Pipeline tab shows a 1M window for a live Opus 5.5 session under 200K · verify: manual · impl: yes · spec: yes
 
 ## Scenarios (after state)
 ```gherkin
@@ -92,3 +92,6 @@ Append-only. One row per change to the ticket, always with a reason. Written by 
 | 2026-11-13 | item | C2.spec: no → yes | Scenario keeps default and fallback lines |
 | 2026-11-13 | set | claude_md: pending → unchanged | models.json is already documented as model data in CLAUDE.md |
 | 2026-11-13 | status | status: in_progress → validating | Code, tests and spec done; C3 awaits the author |
+| 2026-11-13 | item | C3.impl: no → yes | Author confirmed in chat that the Pipeline shows 1M for a live Opus 5.5 session |
+| 2026-11-13 | item | C3.spec: no → yes | user-interface.md Pipeline tab already synced |
+| 2026-11-13 | status | status: validating → done | All items verified; C3 confirmed by the author |
