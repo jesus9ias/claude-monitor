@@ -24,6 +24,7 @@ function session(events: Event[]) {
   return { m, state };
 }
 
+// @sc-pipeline-counts
 test("calls are counted per category, per MCP server, and per subagent", () => {
   const { m, state } = session([
     event("user"),
@@ -49,6 +50,7 @@ test("calls are counted per category, per MCP server, and per subagent", () => {
   assert.equal(p.agents[0]?.toolCalls, 1);
 });
 
+// @sc-pipeline-context-window
 test("context is the latest main message's prompt, and the window grows past 200K", () => {
   const line = (uuid: string, id: string, at: number, input: number) =>
     JSON.stringify({
@@ -70,6 +72,7 @@ test("context is the latest main message's prompt, and the window grows past 200
   assert.equal(contextWindow("m", 300_000), 1_000_000);
 });
 
+// @sc-pipeline-replay-last-turn
 test("replay covers only the last turn, and ends waiting", () => {
   const steps = replaySteps([
     event("user"),
@@ -89,6 +92,7 @@ test("replay covers only the last turn, and ends waiting", () => {
   assert.equal(steps[2]?.tool?.mcpServer, "x");
 });
 
+// @sc-quota-pace
 test("pace: rate from readings after the last reset, exhaustion vs reset", () => {
   const now = Date.UTC(2026, 0, 1, 2);
   const at = (minAgo: number, v: number) => ({ ts: new Date(now - minAgo * 60_000).toISOString(), usedPct: v });
@@ -102,6 +106,7 @@ test("pace: rate from readings after the last reset, exhaustion vs reset", () =>
   assert.equal(projectPace([at(30, 30), at(0, 30)], { usedPct: 30 }, now, 3_600_000)?.exhaustAt, undefined);
 });
 
+// @sc-quota-attribution
 test("attribution weighs sessions by cost since the window start", () => {
   const m = new Monitor({ m: { input: 1, output: 1, cacheRead: 0, cacheCreate: 0 } }, new Bus());
   const line = (session: string, uuid: string, at: number, output: number) =>
@@ -126,6 +131,7 @@ test("attribution weighs sessions by cost since the window start", () => {
   );
 });
 
+// @sc-quota-alert-thresholds
 test("alert thresholds parse, dedupe and sort", () => {
   assert.deepEqual(parseAlerts(undefined), [20, 5]);
   assert.deepEqual(parseAlerts("5, 20,20,150,x"), [20, 5]);
@@ -133,6 +139,7 @@ test("alert thresholds parse, dedupe and sort", () => {
   assert.deepEqual(parseAlerts(""), []);
 });
 
+// @sc-quota-alert-once-per-window
 test("quota alerts: lowest crossed threshold, once per window reset", () => {
   const quota = { status: "ok" as const, fiveHour: { usedPct: 96, resetsAt: "2026-01-01T05:00:00Z" }, sevenDay: { usedPct: 50 } };
   const due = dueAlerts(quota, [20, 5], new Set());

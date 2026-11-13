@@ -35,12 +35,14 @@ const assistant = (uuid: string, messageId: string, block: object, u: object = u
     message: { id: messageId, model, usage: u, content: [block] },
   });
 
+// @sc-transcript-malformed-line-skipped
 test("malformed lines return null and never throw", () => {
   for (const bad of ["{nope", "", "null", "42", "[]", '{"type":"assistant"}', '{"type":"user","message":7}']) {
     assert.equal(parseLine(bad), null, bad);
   }
 });
 
+// @sc-transcript-usage-counted-once
 test("usage repeated across a message's lines is counted once, with the latest value", () => {
   const store = new SessionStore(prices);
   for (const line of [
@@ -57,6 +59,7 @@ test("usage repeated across a message's lines is counted once, with the latest v
   assert.equal(session.costUsd, (10 * 1 + 50 * 2) / 1e6);
 });
 
+// @sc-transcript-reingest-noop
 test("re-ingesting the same line is a no-op", () => {
   const store = new SessionStore(prices);
   const line = assistant("u1", "msg1", { type: "text", text: "hi" });
@@ -66,6 +69,7 @@ test("re-ingesting the same line is a no-op", () => {
   assert.equal(store.get("s1")?.session.usage.output, 20);
 });
 
+// @sc-transcript-synthetic-no-usage
 test("synthetic messages count no usage", () => {
   const store = new SessionStore(prices);
   store.ingest(parseLine(assistant("u1", "msg1", { type: "text", text: "err" }, usage(5, 5), "<synthetic>"))!);
@@ -73,6 +77,7 @@ test("synthetic messages count no usage", () => {
   assert.equal(store.get("s1")?.session.model, undefined);
 });
 
+// @sc-cost-unknown-model-null
 test("unknown model makes the session cost null", () => {
   const store = new SessionStore(prices);
   store.ingest(parseLine(assistant("u1", "msg1", { type: "text", text: "a" }))!);
@@ -80,6 +85,7 @@ test("unknown model makes the session cost null", () => {
   assert.equal(store.get("s1")?.session.costUsd, null);
 });
 
+// @sc-cost-cache-tiers-fast-mode
 test("cost separates 5m and 1h cache writes, and applies tiers and fast mode", () => {
   const base = { input: 0, output: 0, cacheRead: 0, cacheCreate: 0, cacheCreate1h: 0 };
   assert.equal(messageCost(prices, "m", { ...base, cacheCreate: 1_000_000, cacheCreate1h: 1_000_000 }), 2);
@@ -90,6 +96,7 @@ test("cost separates 5m and 1h cache writes, and applies tiers and fast mode", (
   assert.equal(messageCost(prices, "nope", base), null);
 });
 
+// @sc-transcript-path-resolves
 test("transcript paths resolve to a session and an agent", () => {
   const p = (...parts: string[]) => path.join("root", ...parts);
   assert.deepEqual(describeTranscript(p("proj", "abc.jsonl")), { sessionId: "abc" });
@@ -97,6 +104,7 @@ test("transcript paths resolve to a session and an agent", () => {
   assert.equal(describeTranscript(p("proj", "abc.txt")), null);
 });
 
+// @sc-scanner-incremental-read
 test("scanner reads incrementally, holds back partial lines and survives garbage", async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), "monitor-"));
   const dir = path.join(root, "proj");
@@ -119,12 +127,14 @@ test("scanner reads incrementally, holds back partial lines and survives garbage
   assert.equal(store.get("s1")?.session.usage.output, 40);
 });
 
+// @sc-transcript-thinking-event
 test("thinking blocks are their own event kind", () => {
   const parsed = parseLine(assistant("u1", "msg1", { type: "thinking", thinking: "secret plan" }));
   assert.equal(parsed?.events[0]?.kind, "thinking");
   assert.ok(!JSON.stringify(parsed).includes("secret plan"));
 });
 
+// @sc-transcript-phase-markers
 test("phase markers: api-request, compaction, turn end", () => {
   const ts = "2026-01-01T00:00:05.000Z";
   assert.deepEqual(parseLine(JSON.stringify({ type: "api-request", sessionId: "s1", timestamp: ts }))?.marker, { kind: "request" });
@@ -136,6 +146,7 @@ test("phase markers: api-request, compaction, turn end", () => {
   assert.equal(parseLine(JSON.stringify({ type: "system", subtype: "something_new", sessionId: "s1", timestamp: ts })), null);
 });
 
+// @sc-transcript-entrypoint
 test("entrypoint comes from the main transcript", () => {
   const line = JSON.parse(assistant("u1", "msg1", { type: "text", text: "hi" }));
   line.entrypoint = "claude-desktop";

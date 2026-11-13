@@ -10,7 +10,7 @@ A local dashboard for Claude Code. It shows what every session is doing right no
 
 It reads Claude Code's own files on your machine and listens only on `127.0.0.1`. Its only outbound call is the optional quota request to Anthropic.
 
-The design and its rules are in [spec.md](spec.md).
+The design and its rules are the general spec in [specs/general/](specs/general/); work in progress is defined by tickets in `specs/tickets/`.
 
 ## Run it
 

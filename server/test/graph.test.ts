@@ -35,6 +35,7 @@ const events0 = () => new Date(Date.UTC(2026, 0, 1)).toISOString();
 const byType = (g: Graph, type: string) => g.nodes.filter((n) => n.type === type);
 const parentOf = (g: Graph, id: string) => g.edges.find((e) => e.target === id)?.source;
 
+// @sc-graph-turns-and-tools
 test("turns chain from the session, and tools hang from their turn", () => {
   const g = build([event("user"), tool("t1"), result("t1"), event("user"), tool("t2", "Bash"), result("t2", true)]);
   const [t1, t2] = byType(g, "turn");
@@ -49,6 +50,7 @@ test("turns chain from the session, and tools hang from their turn", () => {
   assert.equal(t2?.data.status, "error");
 });
 
+// @sc-graph-subagent-node
 test("an Agent call becomes a subagent node that owns the sidechain's tools", () => {
   const g = build(
     [
@@ -71,11 +73,13 @@ test("an Agent call becomes a subagent node that owns the sidechain's tools", ()
   assert.equal(tools[0]?.data.container, agent!.id);
 });
 
+// @sc-graph-orphan-agent
 test("an agent with no known parent call hangs from the session", () => {
   const g = build([event("user"), event("tool_use", { agentId: "lost", toolName: "Read", toolUseId: "x" })]);
   assert.equal(parentOf(g, "agent:lost"), "session");
 });
 
+// @sc-graph-fold-repeated-tools
 test("more than 8 calls in a turn fold repeated tools, unless grouping is off", () => {
   const events: Event[] = [event("user")];
   for (let i = 0; i < 12; i++) events.push(tool(`r${i}`), result(`r${i}`));
@@ -89,12 +93,14 @@ test("more than 8 calls in a turn fold repeated tools, unless grouping is off", 
   assert.equal(byType(build(events, undefined, false), "tool").length, 13);
 });
 
+// @sc-graph-small-turn-unfolded
 test("8 calls or fewer stay individual", () => {
   const events: Event[] = [event("user")];
   for (let i = 0; i < 8; i++) events.push(tool(`r${i}`), result(`r${i}`));
   assert.equal(byType(build(events), "group").length, 0);
 });
 
+// @sc-graph-running-node
 test("an unanswered tool is running only while the session is active", () => {
   const m = new Monitor({}, new Bus());
   const e = [event("user"), tool("t1")];
@@ -109,6 +115,7 @@ test("an unanswered tool is running only while the session is active", () => {
   assert.equal(byType(buildGraph(state, state.events, true), "tool")[0]?.data.status, undefined);
 });
 
+// @sc-graph-edges-valid
 test("every edge joins existing nodes", () => {
   const g = build([event("user"), tool("t1"), event("tool_use", { agentId: "a", toolName: "Read", toolUseId: "z" })]);
   const ids = new Set(g.nodes.map((n) => n.id));

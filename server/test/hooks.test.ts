@@ -17,6 +17,7 @@ const sessionAt = (monitor: Monitor, seconds: number) => {
   return monitor.sessions.get("s")!.session;
 };
 
+// @sc-hook-invalid-body-ignored
 test("invalid bodies are ignored and unknown events kept with no signal", () => {
   for (const bad of [null, 1, "x", {}, { session_id: "s" }]) assert.equal(parseHook(bad), null);
   const unknown = parseHook({ session_id: "s", hook_event_name: "Whatever" });
@@ -24,6 +25,7 @@ test("invalid bodies are ignored and unknown events kept with no signal", () => 
   assert.equal(unknown?.events.length, 1);
 });
 
+// @sc-hook-content-never-stored
 test("hook payload content never reaches an event or a signal", () => {
   const hook = parseHook({
     session_id: "s",
@@ -36,6 +38,7 @@ test("hook payload content never reaches an event or a signal", () => {
   assert.ok(!JSON.stringify(note).includes("secret"));
 });
 
+// @sc-activity-tool-active
 test("a tool flips active and shows in the activity, and Post clears it", () => {
   const m = new Monitor({}, new Bus());
   send(m, "SessionStart", 0);
@@ -50,6 +53,7 @@ test("a tool flips active and shows in the activity, and Post clears it", () => 
   assert.equal(m.sessions.get("s")!.session.activity.tool, undefined);
 });
 
+// @sc-activity-stop-idle
 test("Stop flips to idle and waiting at once, and a new prompt reactivates", () => {
   const m = new Monitor({}, new Bus());
   send(m, "SessionStart", 0);
@@ -64,6 +68,7 @@ test("Stop flips to idle and waiting at once, and a new prompt reactivates", () 
   assert.equal(again.activity.phase, "requesting");
 });
 
+// @sc-activity-session-end
 test("SessionEnd ends the session", () => {
   const m = new Monitor({}, new Bus());
   send(m, "SessionStart", 0);
@@ -73,6 +78,7 @@ test("SessionEnd ends the session", () => {
   assert.equal(s.activity.phase, "ended");
 });
 
+// @sc-activity-permission-prompt
 test("a permission prompt is shown as needing input", () => {
   const m = new Monitor({}, new Bus());
   send(m, "UserPromptSubmit", 0);
@@ -83,6 +89,7 @@ test("a permission prompt is shown as needing input", () => {
   assert.equal(s.status, "idle");
 });
 
+// @sc-activity-compaction
 test("compaction shows as its own phase", () => {
   const m = new Monitor({}, new Bus());
   send(m, "UserPromptSubmit", 0);
@@ -92,6 +99,7 @@ test("compaction shows as its own phase", () => {
   assert.equal(sessionAt(m, 4).activity.phase, "requesting");
 });
 
+// @sc-activity-post-overtakes-pre
 test("a Post that overtakes its Pre does not leave a stuck tool", () => {
   const m = new Monitor({}, new Bus());
   send(m, "PostToolUse", 1, { tool_name: "Read", tool_use_id: "t1" });
@@ -99,6 +107,7 @@ test("a Post that overtakes its Pre does not leave a stuck tool", () => {
   assert.equal(m.sessions.get("s")!.session.activity.tool, undefined);
 });
 
+// @sc-activity-subagent-tools
 test("a subagent's tools do not become the session's tool, but mark the agent running", () => {
   const m = new Monitor({}, new Bus());
   send(m, "UserPromptSubmit", 0);
@@ -110,6 +119,7 @@ test("a subagent's tools do not become the session's tool, but mark the agent ru
   assert.deepEqual(sessionAt(m, 4).activity.agents, []);
 });
 
+// @sc-activity-tool-expiry
 test("a tool whose Post was lost expires", () => {
   const m = new Monitor({}, new Bus());
   send(m, "PreToolUse", 0, { tool_name: "Bash", tool_use_id: "t1" });
@@ -117,6 +127,7 @@ test("a tool whose Post was lost expires", () => {
   assert.equal(m.sessions.get("s")!.session.activity.tool, undefined);
 });
 
+// @sc-activity-late-line-order
 test("a late transcript line does not undo a Stop", () => {
   const m = new Monitor({}, new Bus());
   send(m, "UserPromptSubmit", 0);
@@ -128,6 +139,7 @@ test("a late transcript line does not undo a Stop", () => {
   assert.equal(sessionAt(m, 11).activity.phase, "waiting_input");
 });
 
+// @sc-activity-bus-events
 test("activity changes are emitted on the bus", () => {
   const bus = new Bus();
   const phases: string[] = [];

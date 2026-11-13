@@ -1,0 +1,32 @@
+flow_version: 1                 # format version; `flow migrate` upgrades older projects
+key: CLM                        # 3-4 letters, set once
+paths:
+  general_spec: specs/general   # where the general spec lives (structure inside is free)
+  tickets: specs/tickets
+  index: specs/INDEX.md         # generated, gitignored; `flow index` rebuilds it
+  flow_md: specs/FLOW.md        # the skill's rules for agents; imported from CLAUDE.md
+  claude_md: CLAUDE.md          # project instructions (root, required); the skill only adds the import line
+  # claude_md_subprojects:      # optional: one per subproject, loaded automatically when working there
+  #   frontend: apps/frontend/CLAUDE.md
+tests:
+  command: npm test                # full test suite
+traceability:
+  scenario_tag: "@sc-"          # stable scenario ID tags, e.g. @sc-login-lock
+  ticket_tag: "@"               # ticket tags, e.g. @CLM-12
+  test_globs: [server/test/*.test.ts]                # where tests reference scenario tags, e.g. ["**/*.test.ts", "**/*.feature"]
+subprojects: [shared, server, web]                  # optional; allowed values of the ticket field `subproject`
+loop:
+  max_attempts_per_ticket: 3
+  require_clean_git: true
+  require_green_baseline: true
+  max_run_minutes: 120          # whole-run budget; tickets not started stay untouched
+  max_total_attempts: 12        # across all tickets in a run
+  max_consecutive_blocked: 2    # stop the run after this many blocked tickets in a row
+  allowed_commands: [npm test]             # anything else stops the ticket (guard)
+  forbidden_actions:            # never, even if a ticket asks for it
+    - deploy, terraform apply, or any change to real resources
+    - publish packages, push to protected branches
+    - delete data or infrastructure
+board:
+  artifact: null                # set after the first publish, so refreshes update the same artifact
+language: en                    # language of tickets and specs

@@ -26,6 +26,7 @@ const json = (status: number, body: unknown, headers: Record<string, string> = {
 const service = (fetchFn: FetchFn, source: "auto" | "usage" | "probe" | "off" = "auto", bus = new Bus()) =>
   new QuotaService({ token: TOKEN, source, intervalMs: 300_000, probeModel: "m", bus, fetchFn });
 
+// @sc-quota-usage-endpoint
 test("usage endpoint: percentages and per-model weeks, token only in the auth header", async () => {
   const { fn, calls } = fakeFetch(() =>
     json(200, {
@@ -46,6 +47,7 @@ test("usage endpoint: percentages and per-model weeks, token only in the auth he
   assert.ok(!JSON.stringify(q).includes(TOKEN));
 });
 
+// @sc-quota-auto-fallback
 test("auto falls back to probe when the token lacks the profile scope", async () => {
   const { fn, calls } = fakeFetch((url) =>
     url.endsWith("/usage")
@@ -65,6 +67,7 @@ test("auto falls back to probe when the token lacks the profile scope", async ()
   assert.equal(calls[2]?.url, "https://api.anthropic.com/v1/messages");
 });
 
+// @sc-quota-probe-429
 test("a 429 from the probe still yields a reading", async () => {
   const { fn } = fakeFetch(() => json(429, {}, { "anthropic-ratelimit-unified-5h-utilization": "1", "anthropic-ratelimit-unified-5h-reset": "1767243600" }));
   const q = await service(fn, "probe").refresh();
@@ -72,6 +75,7 @@ test("a 429 from the probe still yields a reading", async () => {
   assert.equal(q.fiveHour?.usedPct, 100);
 });
 
+// @sc-quota-error-keeps-last
 test("failures keep the last reading, mark error, and never leak the token", async () => {
   let fail = false;
   const { fn } = fakeFetch(() => {
@@ -88,6 +92,7 @@ test("failures keep the last reading, mark error, and never leak the token", asy
   assert.equal(q.error, "could not reach Anthropic");
 });
 
+// @sc-quota-not-configured
 test("no token or source off: not configured and no network", async () => {
   const { fn, calls } = fakeFetch(() => json(200, {}));
   const none = new QuotaService({ source: "auto", intervalMs: 300_000, probeModel: "m", bus: new Bus(), fetchFn: fn });
@@ -97,6 +102,7 @@ test("no token or source off: not configured and no network", async () => {
   assert.equal(calls.length, 0);
 });
 
+// @sc-quota-statusline-feed
 test("statusline feed updates the quota and emits it", () => {
   const bus = new Bus();
   const seen: Quota[] = [];
@@ -110,11 +116,13 @@ test("statusline feed updates the quota and emits it", () => {
   assert.equal(parseStatusline({ model: {} }), null);
 });
 
+// @sc-statusline-junk-ignored
 test("parsers ignore junk", () => {
   assert.deepEqual(parseUsageBody("nope"), { fiveHour: undefined, sevenDay: undefined, sevenDayByModel: undefined });
   assert.deepEqual(parseRateLimitHeaders(new Headers({ "anthropic-ratelimit-unified-5h-utilization": "abc" })), { fiveHour: undefined, sevenDay: undefined });
 });
 
+// @sc-config-quota-interval-clamp
 test("config reads the quota settings and clamps the interval", () => {
   const c = readConfig({ CLAUDE_CODE_OAUTH_TOKEN: ` ${TOKEN} `, CLAUDE_MONITOR_QUOTA_SOURCE: "PROBE", CLAUDE_MONITOR_QUOTA_INTERVAL: "5" });
   assert.equal(c.quota.token, TOKEN);
@@ -123,6 +131,7 @@ test("config reads the quota settings and clamps the interval", () => {
   assert.equal(readConfig({ CLAUDE_MONITOR_QUOTA_SOURCE: "weird" }).quota.source, "auto");
 });
 
+// @sc-db-restores-state
 test("state db keeps activity and quota across restarts", () => {
   const db = new StateDb(":memory:");
   db.saveActivity([{ sessionId: "s", snapshot: { phase: "tool", since: "2026-01-01T00:00:00Z", source: "hook:PreToolUse", runningAgents: [], stoppedAgents: ["a"], stoppedAt: 5 } }]);

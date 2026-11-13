@@ -5,6 +5,7 @@ import path from "node:path";
 import { test } from "node:test";
 import { gitInfo, parseStatus, parseWorktrees } from "../src/infra/git.js";
 
+// @sc-git-status-parse
 test("status header forms", () => {
   assert.deepEqual(parseStatus("## main...origin/main [ahead 2, behind 1]\n M a.ts\n?? b.ts\n"), {
     branch: "main",
@@ -20,6 +21,7 @@ test("status header forms", () => {
   assert.equal(parseStatus("## HEAD (no branch)\n").ahead, 0);
 });
 
+// @sc-git-worktrees
 test("worktrees", () => {
   const output = "worktree /a\nHEAD 1234567890\nbranch refs/heads/main\n\nworktree /b\nHEAD abcdefabcd\ndetached\n";
   assert.deepEqual(parseWorktrees(output), [
@@ -28,6 +30,7 @@ test("worktrees", () => {
   ]);
 });
 
+// @sc-git-not-a-repo
 test("a non-git directory and a missing one report not a repo", async () => {
   const dir = await mkdtemp(path.join(os.tmpdir(), "monitor-git-"));
   assert.deepEqual(await gitInfo(dir), { isRepo: false });
