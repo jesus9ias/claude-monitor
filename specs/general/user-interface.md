@@ -63,6 +63,24 @@ The landing page: range picker, totals, cost by day, and the live session table.
 
 Range picker (today, 7 days, 30 days), tiles (cost, tokens, active now), cost by day per model with a model share donut, and the session table (status, activity, project, model, tokens, cost, last activity). It updates live.
 
+The session table has two views, chosen with a **History / By project** toggle (default History):
+- **History**: one flat list, newest activity first.
+- **By project**: sessions grouped by full `cwd` (same folder name in different paths stays apart), groups ordered by latest activity. Each group's header row shows the project name (full path on hover), session count, active count, summed in + out and cache tokens, summed cost (`n/a` if any session's cost is unknown) and latest activity. A header collapses and expands its group by mouse or keyboard; groups start expanded.
+- The chosen view and the collapsed groups are remembered per browser in `localStorage`; without storage the page still works and starts in History. Grouping is client-side only.
+
+```gherkin
+@sc-sessions-group-by-project @CLM-3
+Scenario: the session table can be grouped by project
+  Given live sessions in two folders, /a/app and /b/app, and the newest activity in /b/app
+  When the user picks "By project"
+  Then there are two groups, /b/app first, both labelled "app" with the full path on hover
+  And each group header shows its session count, active count, summed tokens and cost, and latest activity
+  When the user collapses /a/app and reloads the page
+  Then "By project" is still selected and /a/app is still collapsed
+  When the user picks "History"
+  Then the table is the flat list, newest activity first
+```
+
 ## Processes page
 Live `claude` processes and the session each one belongs to; read-only.
 

@@ -2,7 +2,7 @@
 id: CLM-3                       # assigned by `flow new`, never by hand
 title: Group the session table by project
 type: feature                   # feature | change | bug | refactor | chore
-status: approved               # draft | approved | in_progress | validating | done | blocked | cancelled
+status: validating               # draft | approved | in_progress | validating | done | blocked | cancelled
 priority: medium           # low | medium | high | critical
 
 # Placement
@@ -32,7 +32,7 @@ touches:
   code_scope: [web/src/pages/Sessions.tsx, web/src/components/**, web/src/format.ts, web/src/styles/**, specs/general/**]
 
 # Closure gate: set after implementation (required before done)
-claude_md: pending               # pending | updated | unchanged
+claude_md: unchanged               # pending | updated | unchanged
 ---
 
 # CLM-3 · Group the session table by project
@@ -59,7 +59,7 @@ See `user-interface.md#sessions-page`: the session table is one flat list from t
 - [ ] C3 — Groups collapse and expand by mouse and keyboard; view and collapsed groups survive a reload · verify: manual · impl: no · spec: no
 - [ ] C4 — Live updates move sessions and groups without losing the chosen view or collapsed state · verify: manual · impl: no · spec: no
 - [ ] C5 — Layout works at 375 px in light and dark themes · verify: manual · impl: no · spec: no
-- [ ] C6 — `npm run build` passes · verify: command(npm run build) · impl: no · spec: no
+- [x] C6 — `npm run build` passes · verify: command(npm run build) · impl: yes · spec: yes
 
 ## Scenarios (after state)
 ```gherkin
@@ -94,3 +94,8 @@ Append-only. One row per change to the ticket, always with a reason. Written by 
 | 2026-11-13 | refined | definition | Filled definition: History / By project toggle, groups by full cwd with totals, collapsible, remembered per browser |
 | 2026-11-13 | contradiction-check | check | clean: only extends user-interface.md#sessions-page and adds sc-sessions-group-by-project; no open tickets overlap |
 | 2026-11-13 | status | status: draft → approved | Approved by the author in chat |
+| 2026-11-13 | status | status: approved → in_progress | Implementation started |
+| 2026-11-13 | item | C6.impl: no → yes | npm run build passes (web and server typecheck, Vite build) |
+| 2026-11-13 | item | C6.spec: no → yes | No spec content for the build; sessions-page section updated |
+| 2026-11-13 | set | claude_md: pending → unchanged | UI-only change inside an existing page; no new command, folder or convention |
+| 2026-11-13 | status | status: in_progress → validating | Code and spec done; manual items C1-C5 await the author |

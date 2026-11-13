@@ -304,6 +304,58 @@ table.rows tbody tr:hover {
   font-size: 12px;
 }
 
+.chart-head.wrap {
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+table.rows tbody tr.group-row {
+  background: var(--hover);
+}
+
+.group-row td {
+  vertical-align: middle;
+}
+
+.group-toggle {
+  border: 0;
+  background: none;
+  margin-left: -6px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--text-secondary);
+}
+
+.chevron {
+  display: inline-block;
+  transition: transform 120ms ease;
+}
+
+.chevron.open {
+  transform: rotate(90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chevron {
+    transition: none;
+  }
+}
+
+.group-active {
+  margin-left: 4px;
+  color: var(--good);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.group-name {
+  font-weight: 600;
+}
+
+table.rows tr.nested td:first-child {
+  padding-left: 26px;
+}
+
 .status {
   display: inline-flex;
   align-items: center;
