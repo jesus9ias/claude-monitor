@@ -112,13 +112,14 @@ Scenario: calls are counted per category, per MCP server and per subagent
   And each subagent has its own count
 
 @sc-pipeline-context-window
-Scenario: context is the latest main message's prompt size and the window grows past 200K
+Scenario: context is the latest main message's prompt size and the window comes from the model
   Given assistant messages on the main transcript and one compaction
   When the pipeline stats are built
   Then the context size is the latest main message's input plus cache-read tokens
-  And the context window is the model's window from models.json (200K)
   And the compactions counter is 1
-  Given a session seen with more tokens than that window
+  And a model listed in models.json, with or without a dated suffix, has its listed window (claude-opus-5-5: 1M)
+  And a model not listed has the default window (200K)
+  Given a session seen with more tokens than its window
   Then the context window is the 1M-token variant
 
 @sc-pipeline-replay-last-turn

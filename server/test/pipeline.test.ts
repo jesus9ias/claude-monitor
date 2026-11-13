@@ -51,7 +51,7 @@ test("calls are counted per category, per MCP server, and per subagent", () => {
 });
 
 // @sc-pipeline-context-window
-test("context is the latest main message's prompt, and the window grows past 200K", () => {
+test("context is the latest main message's prompt, and the window comes from the model", () => {
   const line = (uuid: string, id: string, at: number, input: number) =>
     JSON.stringify({
       type: "assistant",
@@ -70,6 +70,9 @@ test("context is the latest main message's prompt, and the window grows past 200
   assert.equal(p.context.windowTokens, 200_000);
   assert.equal(p.context.compactions, 1);
   assert.equal(contextWindow("m", 300_000), 1_000_000);
+  assert.equal(contextWindow("claude-opus-5-5", 0), 1_000_000);
+  assert.equal(contextWindow("claude-opus-5-5-20261101", 0), 1_000_000);
+  assert.equal(contextWindow("m", 150_000), 200_000);
 });
 
 // @sc-pipeline-replay-last-turn

@@ -87,7 +87,7 @@ A fixed SVG diagram of the session's loop whose blocks light up and whose edges 
 
 The geometry and the phase → animation mapping live in `web/src/pages/session/pipeline/layout.ts`, as pure code.
 
-- **Blocks**: You, Model, Output, Context, Tool router, Needs input, and one block per tool category (Read files, Search, Write code, Shell, Web, MCP, Skill, Subagents, Planning, Other). Each shows a session counter. Context has a fill bar against the model's context window, from `server/src/domain/models.json`; a session seen above its window is taken to run the 1M-token variant.
+- **Blocks**: You, Model, Output, Context, Tool router, Needs input, and one block per tool category (Read files, Search, Write code, Shell, Web, MCP, Skill, Subagents, Planning, Other). Each shows a session counter. Context has a fill bar against the model's context window, from `server/src/domain/models.json` (current Opus, Fable, Sonnet and Haiku models: 1M; any other model: 200K); a session seen above its window is taken to run the 1M-token variant.
 - **Animation**: the blocks for the current phase light up, and particles run along the edges in use. Requesting animates You → Model, Router → Model after a tool, or Context → Model after compaction. Thinking pulses Model and draws from Context. Writing animates Model → Output. A tool animates Model → Router → its category, and MCP shows the server. A permission prompt animates Router → Needs input, and compaction pulses Context. Running subagents pulse Subagents.
 - **Reduced motion**: blocks are still highlighted, but nothing moves.
 - **Drawer**: clicking a block opens a drawer with the current call, counts, average and last duration, totals per tool, per MCP server or per subagent, and the last 20 calls.
