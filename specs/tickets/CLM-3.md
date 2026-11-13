@@ -2,7 +2,7 @@
 id: CLM-3                       # assigned by `flow new`, never by hand
 title: Group the session table by project
 type: feature                   # feature | change | bug | refactor | chore
-status: draft               # draft | approved | in_progress | validating | done | blocked | cancelled
+status: approved               # draft | approved | in_progress | validating | done | blocked | cancelled
 priority: medium           # low | medium | high | critical
 
 # Placement
@@ -93,3 +93,4 @@ Append-only. One row per change to the ticket, always with a reason. Written by 
 | 2026-11-13 | created | status: null → draft | Author asked for a History / By project toggle on the Sessions page |
 | 2026-11-13 | refined | definition | Filled definition: History / By project toggle, groups by full cwd with totals, collapsible, remembered per browser |
 | 2026-11-13 | contradiction-check | check | clean: only extends user-interface.md#sessions-page and adds sc-sessions-group-by-project; no open tickets overlap |
+| 2026-11-13 | status | status: draft → approved | Approved by the author in chat |
