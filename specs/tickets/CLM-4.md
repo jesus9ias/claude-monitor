@@ -2,7 +2,7 @@
 id: CLM-4                       # assigned by `flow new`, never by hand
 title: Session table follows the date range
 type: feature                   # feature | change | bug | refactor | chore
-status: validating               # draft | approved | in_progress | validating | done | blocked | cancelled
+status: done               # draft | approved | in_progress | validating | done | blocked | cancelled
 priority: medium           # low | medium | high | critical
 
 # Placement
@@ -52,9 +52,9 @@ See `user-interface.md#sessions-page`: the range picker drives the tiles and the
 - The filter is client-side and updates live: it re-applies when the range changes, when sessions update, and as time passes (a session that drops out of Today at midnight disappears without a reload). No server, REST or stream change; `PROTOCOL_VERSION` is untouched.
 
 ### Checklist
-- [ ] C1 — History view hides sessions with no activity in the range and keeps active ones · verify: manual · impl: no · spec: no
-- [ ] C2 — By project view hides empty groups and sums only visible sessions in headers · verify: manual · impl: no · spec: no
-- [ ] C3 — Empty range shows "No sessions in this range."; changing the range updates the table at once · verify: manual · impl: no · spec: no
+- [x] C1 — History view hides sessions with no activity in the range and keeps active ones · verify: manual · impl: yes · spec: yes
+- [x] C2 — By project view hides empty groups and sums only visible sessions in headers · verify: manual · impl: yes · spec: yes
+- [x] C3 — Empty range shows "No sessions in this range."; changing the range updates the table at once · verify: manual · impl: yes · spec: yes
 
 ## Scenarios (after state)
 ```gherkin
@@ -91,3 +91,10 @@ Append-only. One row per change to the ticket, always with a reason. Written by 
 | 2026-11-14 | status | status: approved → in_progress | Implementation started with the author |
 | 2026-11-14 | set | claude_md: pending → unchanged | No new command, dependency, convention or folder; client-side filter only |
 | 2026-11-14 | status | status: in_progress → validating | Implemented and checked against /api/sessions; waiting for the author's manual check |
+| 2026-11-14 | item | C1.impl: no → yes | Checked by the author in the browser on 2026-11-14 |
+| 2026-11-14 | item | C1.spec: no → yes | user-interface.md#sessions-page, @sc-sessions-table-follows-range |
+| 2026-11-14 | item | C2.impl: no → yes | Checked by the author in the browser on 2026-11-14 |
+| 2026-11-14 | item | C2.spec: no → yes | user-interface.md#sessions-page, @sc-sessions-table-follows-range |
+| 2026-11-14 | item | C3.impl: no → yes | Checked by the author in the browser on 2026-11-14 |
+| 2026-11-14 | item | C3.spec: no → yes | user-interface.md#sessions-page, @sc-sessions-table-follows-range |
+| 2026-11-14 | status | status: validating → done | The author confirmed the manual check |
