@@ -68,6 +68,12 @@ The session table has two views, chosen with a **History / By project** toggle (
 - **By project**: sessions grouped by full `cwd` (same folder name in different paths stays apart), groups ordered by latest activity. Each group's header row shows the project name (full path on hover), session count, active count, summed in + out and cache tokens, summed cost (`n/a` if any session's cost is unknown) and latest activity. A header collapses and expands its group by mouse or keyboard; groups start expanded.
 - The chosen view and the collapsed groups are remembered per browser in `localStorage`; without storage the page still works and starts in History. Grouping is client-side only.
 
+The session table follows the range picker:
+- It shows only sessions whose last activity is at or after the range start (local midnight today, 6 days ago or 29 days ago, the same start as `/api/stats`). Active sessions are always shown.
+- In By project, groups with no shown session are hidden and header totals sum only the shown sessions.
+- Row tokens and cost stay whole-session, so the rows can add up to more than the range tiles.
+- With sessions but none in the range it reads "No sessions in this range." Filtering is client-side and live, including when the local day turns over.
+
 ```gherkin
 @sc-sessions-group-by-project @CLM-3
 Scenario: the session table can be grouped by project
@@ -79,6 +85,18 @@ Scenario: the session table can be grouped by project
   Then "By project" is still selected and /a/app is still collapsed
   When the user picks "History"
   Then the table is the flat list, newest activity first
+```
+
+```gherkin
+@sc-sessions-table-follows-range @CLM-4
+Scenario: the session table follows the date range
+  Given an idle session last active 3 days ago, an idle session last active today, and an active session last active 2 days ago
+  When the user picks "Today"
+  Then the table shows the session active today and the active session, but not the one from 3 days ago
+  When the user picks "7 days"
+  Then all three sessions are shown, each with its whole-session tokens and cost
+  When the user picks "By project" with "Today" selected
+  Then a project whose only session is the one from 3 days ago has no group, and group totals count only the shown sessions
 ```
 
 ## Processes page

@@ -40,6 +40,14 @@ function writeStored(key: string, value: unknown): void {
   }
 }
 
+/** Local midnight at the start of the range; the same start /api/stats uses. */
+function rangeStartMs(range: StatsRange, now: number): number {
+  const d = new Date(now);
+  const start = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  start.setDate(start.getDate() - (range === "today" ? 0 : range === "7d" ? 6 : 29));
+  return start.getTime();
+}
+
 interface ProjectGroup {
   cwd: string;
   sessions: Session[];
@@ -116,7 +124,14 @@ export function SessionsPage() {
     return { cost, tokens };
   }, [stats]);
 
-  const groups = useMemo(() => (view === "project" && sessions ? groupByProject(sessions) : []), [view, sessions]);
+  // Changes only when the range does or the local day turns over, not every tick.
+  const startMs = rangeStartMs(range, now);
+  const visible = useMemo(
+    () => sessions?.filter((s) => s.status === "active" || Date.parse(s.lastEventAt) >= startMs),
+    [sessions, startMs],
+  );
+
+  const groups = useMemo(() => (view === "project" && visible ? groupByProject(visible) : []), [view, visible]);
 
   const chooseView = (next: TableView) => {
     setView(next);
@@ -195,6 +210,7 @@ export function SessionsPage() {
         </div>
         {error && <p className="error">{error}</p>}
         {sessions?.length === 0 && <p className="empty">No Claude Code sessions found.</p>}
+        {sessions && sessions.length > 0 && visible?.length === 0 && <p className="empty">No sessions in this range.</p>}
         <div className="table-wrap">
           <table className="rows">
             <thead>
@@ -209,7 +225,7 @@ export function SessionsPage() {
               </tr>
             </thead>
             <tbody>
-              {view === "history" && sessions?.map((s) => renderRow(s))}
+              {view === "history" && visible?.map((s) => renderRow(s))}
               {view === "project" &&
                 groups.map((g) => {
                   const open = !collapsed.has(g.cwd);

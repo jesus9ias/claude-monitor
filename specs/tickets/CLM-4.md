@@ -2,7 +2,7 @@
 id: CLM-4                       # assigned by `flow new`, never by hand
 title: Session table follows the date range
 type: feature                   # feature | change | bug | refactor | chore
-status: approved               # draft | approved | in_progress | validating | done | blocked | cancelled
+status: validating               # draft | approved | in_progress | validating | done | blocked | cancelled
 priority: medium           # low | medium | high | critical
 
 # Placement
@@ -32,7 +32,7 @@ touches:
   code_scope: [web/src/pages/Sessions.tsx, web/src/format.ts, web/src/styles/**, specs/general/**]
 
 # Closure gate: set after implementation (required before done)
-claude_md: pending               # pending | updated | unchanged
+claude_md: unchanged               # pending | updated | unchanged
 ---
 
 # CLM-4 · Session table follows the date range
@@ -88,3 +88,6 @@ Append-only. One row per change to the ticket, always with a reason. Written by 
 | 2026-11-14 | refined | definition | Wrote the definition: hide rows outside the range, keep lifetime totals per row |
 | 2026-11-14 | contradiction-check | check | clean: only user-interface.md#sessions-page changes, declared in touches; CLM-3 grouping kept, group totals now over visible sessions; no open tickets overlap |
 | 2026-11-14 | status | status: draft → approved | Approved by the author in conversation |
+| 2026-11-14 | status | status: approved → in_progress | Implementation started with the author |
+| 2026-11-14 | set | claude_md: pending → unchanged | No new command, dependency, convention or folder; client-side filter only |
+| 2026-11-14 | status | status: in_progress → validating | Implemented and checked against /api/sessions; waiting for the author's manual check |
