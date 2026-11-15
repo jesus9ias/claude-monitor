@@ -73,13 +73,35 @@ function connect(): void {
   }
   source.onerror = () => {
     lostConnection = true;
+    setConnection("reconnecting");
   };
   source.onopen = () => {
+    setConnection("connected");
     if (lostConnection) {
       lostConnection = false;
       for (const listener of reconnectListeners) listener();
     }
   };
+}
+
+export type ConnectionState = "connecting" | "connected" | "reconnecting";
+
+let connection: ConnectionState = "connecting";
+const connectionWatchers = new Set<() => void>();
+
+function setConnection(next: ConnectionState): void {
+  if (next === connection) return;
+  connection = next;
+  for (const w of connectionWatchers) w();
+}
+
+/** The stream's connection state, for the side menu. Opens the stream if it is not open yet. */
+export const connectionState = (): ConnectionState => connection;
+
+export function watchConnection(watcher: () => void): () => void {
+  connect();
+  connectionWatchers.add(watcher);
+  return () => connectionWatchers.delete(watcher);
 }
 
 /** Shared stream. `onReconnect` fires after an outage, when a page should refetch what it missed. */

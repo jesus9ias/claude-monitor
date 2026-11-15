@@ -40,7 +40,8 @@ Subprojects for tickets: `shared`, `server`, `web`.
 - **Stream protocol.** Any change to a stream message shape bumps `PROTOCOL_VERSION` in `shared`.
 - **Prices and models** are data: `server/src/domain/pricing.json` and `server/src/domain/models.json`.
 - **Tests.** Plain-English test names. Put the spec scenario's tag in a comment right above the test (`// @sc-<id>`), so `node specs/.flow/flow.mjs drift` can link them. Fixed clocks, synthetic lines, fake `fetch`, in-memory SQLite; never the network, the real `~/.claude`, or `.env`.
-- **UI strings are English.** Layout works down to 375 px, follows the system theme, respects reduced motion.
+- **UI strings are English.** Layout works down to 375 px, respects reduced motion. Dark theme only (Glass Dark): colors, surfaces and fonts come from the tokens in `web/src/styles/base.css`, never hard-coded per page.
+- **Icons** come from `web/src/components/Icon.tsx` (add one there when a concept has none), never emoji or an icon package. Fonts are self-hosted from `@fontsource-variable/*`; no font CDN.
 - **The web package has no automated tests.** Verify UI changes by running `npm run dev` and looking.
 
 ## Secrets and privacy

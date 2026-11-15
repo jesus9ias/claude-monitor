@@ -1,7 +1,7 @@
 import { lazy, StrictMode, Suspense } from "react";
 import { createRoot } from "react-dom/client";
-import { BrowserRouter, NavLink, Route, Routes } from "react-router-dom";
-import { QuotaIndicator } from "./components/QuotaIndicator";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { SideNav } from "./components/SideNav";
 import { ProcessesPage } from "./pages/Processes";
 import { QuotaPage } from "./pages/Quota";
 import { useQuotaAlerts } from "./state/alerts";
@@ -10,7 +10,12 @@ import { OverviewTab } from "./pages/session/OverviewTab";
 import { PipelineTab } from "./pages/session/PipelineTab";
 import { SessionLayout } from "./pages/session/SessionLayout";
 import { SessionsPage } from "./pages/Sessions";
+// Fonts are bundled from npm: no request leaves the machine.
+import "@fontsource-variable/inter";
+import "@fontsource-variable/space-grotesk";
+import "@fontsource-variable/jetbrains-mono";
 import "./styles/base.css";
+import "./styles/shell.css";
 import "./styles/components.css";
 import "./styles/session.css";
 import "./styles/flow.css";
@@ -24,39 +29,29 @@ function App() {
   useQuotaAlerts();
   return (
     <BrowserRouter>
-      <header className="topbar">
-        <NavLink to="/" className="brand">
-          Claude Monitor
-        </NavLink>
-        <nav>
-          <NavLink to="/" end>
-            Sessions
-          </NavLink>
-          <NavLink to="/processes">Processes</NavLink>
-          <NavLink to="/quota">Quota</NavLink>
-        </nav>
-        <QuotaIndicator />
-      </header>
-      <main>
-        <Routes>
-          <Route path="/" element={<SessionsPage />} />
-          <Route path="/processes" element={<ProcessesPage />} />
-          <Route path="/quota" element={<QuotaPage />} />
-          <Route path="/sessions/:id" element={<SessionLayout />}>
-            <Route index element={<OverviewTab />} />
-            <Route path="events" element={<EventsTab />} />
-            <Route
-              path="flow"
-              element={
-                <Suspense fallback={<p className="empty">Loading…</p>}>
-                  <FlowTab />
-                </Suspense>
-              }
-            />
-            <Route path="pipeline" element={<PipelineTab />} />
-          </Route>
-        </Routes>
-      </main>
+      <div className="shell">
+        <SideNav />
+        <main>
+          <Routes>
+            <Route path="/" element={<SessionsPage />} />
+            <Route path="/processes" element={<ProcessesPage />} />
+            <Route path="/quota" element={<QuotaPage />} />
+            <Route path="/sessions/:id" element={<SessionLayout />}>
+              <Route index element={<OverviewTab />} />
+              <Route path="events" element={<EventsTab />} />
+              <Route
+                path="flow"
+                element={
+                  <Suspense fallback={<p className="empty">Loading…</p>}>
+                    <FlowTab />
+                  </Suspense>
+                }
+              />
+              <Route path="pipeline" element={<PipelineTab />} />
+            </Route>
+          </Routes>
+        </main>
+      </div>
     </BrowserRouter>
   );
 }

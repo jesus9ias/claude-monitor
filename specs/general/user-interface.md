@@ -2,12 +2,25 @@
 
 A React single-page app with three pages (Sessions, Processes, Quota) and a per-session view with four tabs, kept live by the stream.
 
-All text in the UI is in English. The layout is responsive down to 375 px, follows the system light or dark theme, and respects reduced motion.
+All text in the UI is in English. The layout is responsive down to 375 px and respects reduced motion: only live things move (the Active pulse, running flow nodes, the pipeline path), and nothing moves under `prefers-reduced-motion`.
+
+**Glass Dark theme.** There is one dark theme only; the UI does not follow the system light or dark setting (`color-scheme: dark` on the root). Tokens live in `web/src/styles/base.css`:
+- Ground: ink `#07080C` with three soft radial lights (ember, iris, teal) fixed behind the content.
+- Glass card: white 7%→3% gradient, 1 px white 9% border, inner top highlight, `blur(24px) saturate(150%)`, radius 18. Blur only on the outermost card. Controls inside a card are flat 5% white, radius 12, no blur; tracks and inputs are 25% black wells. Without `backdrop-filter` support cards fall back to an opaque `#151722`.
+- Signal colors: ember `#F59A6B` (accent, selection), iris `#8E9BFF` (model, focus ring), teal `#3DD6C0` (live, quota OK), amber `#F5C04E` (idle, getting low), rose `#FF7A90` (error, almost out), slate `#7C8297` (ended). Model series colors follow the model, never its rank. Text passes 4.5:1 on the glass surface.
+- Type: Space Grotesk for headings and big metrics, Inter for body, JetBrains Mono for ids, pids and paths; numbers are tabular. The fonts are bundled from npm packages: no request leaves the machine.
+- Focus: a 2 px iris ring with 2 px offset on every control.
+
+**Status is never color alone.** `StatusBadge`: Active = pulsing teal dot, Idle = amber ring, Ended = hollow slate dot, Error = triangle icon, each with its word. `ActivityBadge` shows the tool-category icon (or the phase icon) with the activity.
+
+**Icons.** One inline SVG set in `web/src/components/Icon.tsx` (24 px grid, 1.75 px stroke, round caps, `currentColor`, no icon dependency), one icon per concept: navigation, metrics, session context, every tool category, states and actions. Decorative icons are `aria-hidden`; icon-only buttons carry an `aria-label`.
 
 ## Top bar
-Navigation plus a live quota readout that links to the Quota page.
+The app shell's navigation: a side menu from 768 px up, a phone header and bottom tab bar below.
 
-Navigation (Sessions, Processes, Quota) and the quota readout: percentage left of the 5-hour and weekly windows, colored by level, with the reset time and source in a tooltip. When there is no data it shows "Quota not configured".
+- **Side menu** (glass card, sticky): brand, the three destinations (Sessions, Processes, Quota) with icons and live counts ("n live" sessions, number of processes), a compact quota card, and the stream connection state (connected, connecting, reconnecting). Sessions stays selected inside a session view.
+- **Quota card**: both windows (5-hour, weekly) with percentage left, level word (OK, getting low, almost out) and color, a meter of the used part and the reset time; the source and age in a tooltip, a "stale" chip after a failed refresh. It links to `/quota`. When there is no data it shows "Quota not configured".
+- **Below 768 px**: a phone header (brand, stream dot, a quota chip with the tighter window's percentage left, linking to `/quota`) and a bottom tab bar with the three destinations; touch targets are at least 44 px.
 
 ## Quota page
 `/quota` shows both windows, a pace projection, per-model weeks, 7-day history, the session split of the current 5-hour window, and alert settings.

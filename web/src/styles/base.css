@@ -1,130 +1,182 @@
+/*
+ * Glass Dark: one dark theme only. No light theme, no prefers-color-scheme switch.
+ * Every color, surface and radius of the UI comes from these tokens.
+ */
 :root {
-  color-scheme: light;
-  --page: #f9f9f7;
-  --surface: #fcfcfb;
-  --text: #0b0b0b;
-  --text-secondary: #52514e;
-  --text-muted: #6f6d68;
-  --grid: #e1e0d9;
-  --baseline: #c3c2b7;
-  --border: rgba(11, 11, 11, 0.1);
-  --hover: rgba(11, 11, 11, 0.04);
-  --accent: #256abf;
-  --good: #0ca30c;
-  --warning: #fab219;
-  --critical: #d03b3b;
-  --neutral: #898781;
-  --series-1: #2a78d6;
-  --series-2: #eb6834;
-  --series-3: #1baf7a;
-  --series-4: #eda100;
-  --series-5: #e87ba4;
-  --series-6: #008300;
-  --series-7: #6250d6;
-  --series-8: #0b9bb5;
-  --series-9: #9c6b3c;
-  --series-10: #b8323c;
-  --series-other: #898781;
-}
+  color-scheme: dark;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-    --page: #0d0d0d;
-    --surface: #1a1a19;
-    --text: #f0efec;
-    --text-secondary: #c3c2b7;
-    --text-muted: #a3a29a;
-    --grid: #2c2c2a;
-    --baseline: #383835;
-    --border: rgba(255, 255, 255, 0.1);
-    --hover: rgba(255, 255, 255, 0.05);
-    --accent: #6da7ec;
-    --series-1: #3987e5;
-    --series-2: #d95926;
-    --series-3: #199e70;
-    --series-4: #c98500;
-    --series-5: #d55181;
-    --series-6: #008300;
-    --series-7: #9085e9;
-    --series-8: #2fb4cc;
-    --series-9: #b5844f;
-    --series-10: #d9545d;
-  }
+  /* Ground and glass */
+  --ink: #07080c;
+  --glass-fill: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.03));
+  --glass-border: rgba(255, 255, 255, 0.09);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  --glass-shadow: 0 12px 32px rgba(0, 0, 0, 0.32);
+  --glass-blur: blur(24px) saturate(150%);
+  --glass-fallback: #151722;
+  --control: rgba(255, 255, 255, 0.05);
+  --control-hover: rgba(255, 255, 255, 0.1);
+  --control-border: rgba(255, 255, 255, 0.08);
+  --well: rgba(0, 0, 0, 0.25);
+  --radius-card: 18px;
+  --radius-control: 12px;
+
+  /* Signal colors */
+  --ember: #f59a6b;
+  --ember-text: #ffd3bd;
+  --iris: #8e9bff;
+  --iris-text: #c6ccff;
+  --teal: #3dd6c0;
+  --teal-text: #8ef0e0;
+  --amber: #f5c04e;
+  --amber-text: #f8d78a;
+  --rose: #ff7a90;
+  --rose-text: #ffb3c0;
+  --slate: #7c8297;
+
+  /* Text, all at least 4.5:1 on the glass surface */
+  --text: #e7e9f0;
+  --text-secondary: #c9ced8;
+  --text-muted: #9aa0b4;
+
+  /* Names the pages already use, mapped onto the glass tokens */
+  --page: var(--ink);
+  --surface: var(--glass-fallback);
+  --grid: rgba(255, 255, 255, 0.07);
+  --baseline: rgba(255, 255, 255, 0.16);
+  --border: var(--control-border);
+  --hover: rgba(255, 255, 255, 0.05);
+  --accent: var(--ember);
+  --link: #f5a57e;
+  --focus: var(--iris);
+  --good: var(--teal);
+  --warning: var(--amber);
+  --critical: var(--rose);
+  --neutral: var(--slate);
+
+  /* Model series: the color follows the model, never its rank (slots in CostByDayChart) */
+  --series-1: #f59a6b;
+  --series-2: #8e9bff;
+  --series-3: #3dd6c0;
+  --series-4: #f7b98f;
+  --series-5: #b5bdff;
+  --series-6: #f5c04e;
+  --series-7: #7fb2ff;
+  --series-8: #e3a6f5;
+  --series-9: #c98ae0;
+  --series-10: #ff9aab;
+  --series-other: #6b7186;
+
+  /* Type */
+  --font-body: "Inter Variable", Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Space Grotesk Variable", "Space Grotesk", var(--font-body);
+  --font-mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, monospace;
 }
 
 * {
   box-sizing: border-box;
 }
 
+html {
+  background: var(--ink);
+}
+
 body {
   margin: 0;
-  background: var(--page);
+  min-height: 100vh;
+  background: var(--ink);
   color: var(--text);
-  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 14px/1.45 var(--font-body);
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Three soft lights behind the content, fixed so the glass has something to blur. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(640px 460px at 8% 0%, rgba(245, 154, 107, 0.2), transparent 70%),
+    radial-gradient(760px 520px at 100% 8%, rgba(142, 155, 255, 0.2), transparent 70%),
+    radial-gradient(900px 640px at 55% 100%, rgba(61, 214, 192, 0.12), transparent 70%);
 }
 
 a {
-  color: var(--accent);
+  color: var(--link);
+  text-decoration: none;
+}
+
+a:hover {
+  color: #ffc4a6;
 }
 
 h1 {
   margin: 0 0 2px;
-  font-size: 20px;
+  font-family: var(--font-display);
+  font-size: 26px;
   font-weight: 600;
+  letter-spacing: -0.02em;
   overflow-wrap: anywhere;
 }
 
 h2 {
   margin: 0 0 12px;
-  font-size: 14px;
+  font-family: var(--font-display);
+  font-size: 16px;
   font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+h3 {
+  font-family: var(--font-display);
+}
+
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
 }
 
 button {
-  font: inherit;
-  color: inherit;
   cursor: pointer;
 }
 
+code,
+kbd,
+pre,
+.mono {
+  font-family: var(--font-mono);
+}
+
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
 
-.topbar {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  padding: 12px 24px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
+::selection {
+  background: rgba(245, 154, 107, 0.35);
 }
 
-.topbar a {
-  color: var(--text-secondary);
-  text-decoration: none;
+.icon {
+  flex: none;
 }
 
-.topbar .brand {
-  color: var(--text);
-  font-weight: 600;
-}
-
-.topbar nav {
-  display: flex;
-  gap: 16px;
-}
-
-.topbar nav a.active {
-  color: var(--text);
-  font-weight: 600;
+/* App shell: side menu at the left, content at the right; a bottom tab bar below 768 px. */
+.shell {
+  display: grid;
+  grid-template-columns: 248px minmax(0, 1fr);
+  gap: 20px;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 20px;
+  align-items: start;
 }
 
 main {
-  max-width: 1240px;
-  margin: 0 auto;
-  padding: 20px 24px 48px;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -153,20 +205,28 @@ main {
 }
 
 .error {
-  color: var(--critical);
+  color: var(--rose-text);
+}
+
+@media (max-width: 767px) {
+  .shell {
+    display: block;
+    padding: 16px 16px 104px;
+  }
 }
 
 @media (max-width: 640px) {
-  main {
-    padding: 16px 16px 32px;
-  }
-
-  .topbar {
-    padding: 12px 16px;
-  }
-
   .event-time,
   .event-tokens {
     display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
   }
 }

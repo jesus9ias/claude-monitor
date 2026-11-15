@@ -20,11 +20,33 @@
   overflow: hidden;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-card);
 }
 
 .flow-wrap .react-flow {
-  --xy-background-color: var(--surface);
+  --xy-background-color: transparent;
+  --xy-background-pattern-color: rgba(255, 255, 255, 0.08);
+  --xy-edge-stroke: rgba(255, 255, 255, 0.28);
+  --xy-minimap-background-color: rgba(20, 22, 32, 0.9);
+  --xy-minimap-mask-background-color: rgba(0, 0, 0, 0.5);
+  --xy-minimap-node-background-color: rgba(255, 255, 255, 0.25);
+  --xy-controls-button-background-color: rgba(20, 22, 32, 0.9);
+  --xy-controls-button-background-color-hover: rgba(40, 43, 58, 0.95);
+  --xy-controls-button-color: var(--text);
+  --xy-controls-button-color-hover: #fff;
+  --xy-controls-button-border-color: var(--control-border);
+  --xy-attribution-background-color: transparent;
+}
+
+.flow-wrap {
+  background: var(--well);
+}
+
+.flow-wrap .react-flow__minimap,
+.flow-wrap .react-flow__controls {
+  border-radius: var(--radius-control);
+  overflow: hidden;
+  border: 1px solid var(--control-border);
 }
 
 .flow-node {
@@ -49,7 +71,7 @@
 }
 
 .flow-node-subagent {
-  border-left: 4px solid var(--series-7);
+  border-left: 4px solid var(--iris);
 }
 
 .flow-node-group {
@@ -169,7 +191,7 @@
   overflow-y: auto;
   background: var(--surface);
   border-left: 1px solid var(--baseline);
-  box-shadow: -4px 0 16px rgba(0, 0, 0, 0.12);
+  box-shadow: -12px 0 32px rgba(0, 0, 0, 0.4);
 }
 
 .drawer-head {

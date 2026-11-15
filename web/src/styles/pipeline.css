@@ -76,11 +76,11 @@
 }
 
 .pl-tone-model {
-  --tone: var(--series-7);
+  --tone: var(--iris);
 }
 
 .pl-tone-tool {
-  --tone: var(--series-3);
+  --tone: var(--ember);
 }
 
 .pl-tone-warn {
@@ -126,7 +126,7 @@
 }
 
 .pl-bar-ok {
-  fill: var(--series-1);
+  fill: var(--teal);
 }
 
 .pl-bar-warning {

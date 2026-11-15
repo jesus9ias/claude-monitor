@@ -1,0 +1,268 @@
+/* Side menu (768 px and up), phone header and bottom tab bar (below 768 px). */
+.side {
+  position: sticky;
+  top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 16px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 6px;
+  color: var(--text);
+}
+
+.brand:hover {
+  color: var(--text);
+}
+
+.brand-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: rgba(245, 154, 107, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(245, 154, 107, 0.3);
+  color: var(--ember);
+}
+
+.brand-name {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.side-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.side-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: var(--radius-control);
+  color: var(--text-secondary);
+  font-weight: 500;
+  transition: background 160ms ease-out;
+}
+
+.side-link:hover {
+  background: var(--hover);
+  color: #fff;
+}
+
+.side-link[aria-current="page"] {
+  background: rgba(245, 154, 107, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(245, 154, 107, 0.25);
+  color: var(--ember-text);
+}
+
+.side-label {
+  flex: 1;
+}
+
+.nav-count {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.nav-count.chip {
+  min-height: 22px;
+  padding: 0 8px;
+  border-color: transparent;
+}
+
+/* Compact quota card. */
+.quota-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.quota-card:hover {
+  color: var(--text);
+  background: var(--control-hover);
+}
+
+.qc-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.qc-stale {
+  margin-left: auto;
+  min-height: 20px;
+}
+
+.qc-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.qc-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.qc-left {
+  font-variant-numeric: tabular-nums;
+}
+
+.qc-good {
+  color: var(--teal-text);
+}
+
+.qc-warning {
+  color: var(--amber-text);
+}
+
+.qc-critical {
+  color: var(--rose-text);
+}
+
+.qc-meter {
+  height: 6px;
+  border-radius: 99px;
+  background: rgba(0, 0, 0, 0.35);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.qc-fill {
+  height: 100%;
+  border-radius: 99px;
+}
+
+.qc-fill-good {
+  background: var(--teal);
+}
+
+.qc-fill-warning {
+  background: var(--amber);
+}
+
+.qc-fill-critical {
+  background: var(--rose);
+}
+
+.qc-reset {
+  color: var(--text-muted);
+}
+
+.stream {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 6px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.stream-reconnecting,
+.stream-connecting {
+  color: var(--rose-text);
+}
+
+.phone-head,
+.tabbar {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .side {
+    display: none;
+  }
+
+  .phone-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .phone-head .brand {
+    padding: 0;
+    margin-right: auto;
+  }
+
+  .phone-head .brand-mark {
+    width: 34px;
+    height: 34px;
+    border-radius: 11px;
+  }
+
+  .quota-chip {
+    min-height: 36px;
+    padding: 0 12px;
+  }
+
+  .tabbar {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: 16px;
+    z-index: 50;
+    display: flex;
+    gap: 4px;
+    padding: 6px;
+    border-radius: 22px;
+    background: rgba(20, 22, 32, 0.72);
+  }
+
+  .tabbar-link {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-height: 56px;
+    border-radius: 14px;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  .tabbar-link[aria-current="page"] {
+    color: var(--ember-text);
+    background: rgba(245, 154, 107, 0.12);
+  }
+
+  .tabbar-badge {
+    position: absolute;
+    top: 6px;
+    left: calc(50% + 6px);
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 99px;
+    background: var(--teal);
+    color: #062520;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 18px;
+    text-align: center;
+  }
+}
