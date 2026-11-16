@@ -32,7 +32,7 @@ export const formatTime = (iso: string): string =>
 export const formatDateTime = (iso: string): string =>
   new Date(iso).toLocaleString("en-US", { weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
 
-export const formatPct = (v: number): string => `${Math.round(v * 100)}%`;
+export const formatPct = (v: number): string => (v > 0 && v < 0.01 ? "<1%" : `${Math.round(v * 100)}%`);
 
 export const projectName =(cwd: string): string => cwd.split(/[\\/]/).filter(Boolean).pop() ?? cwd;
 

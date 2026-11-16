@@ -128,13 +128,26 @@ Live `claude` processes and the session each one belongs to; read-only.
 ## Session view
 `/sessions/:id/:tab` shows the session header and one of four tabs: Overview, Events, Flow, Pipeline.
 
-The header shows title, cwd, branch, model, entrypoint, pid, status and the live activity.
+The header (a glass card) shows a breadcrumb back to Sessions, the title, status and live activity on the right, and chips with icons for the cwd (with a copy button), branch, model, entrypoint, pid and start time (full date on hover). The tabs carry icons and counts: Events shows the events loaded so far ("n+" while older pages exist, kept live from `event_added`), Flow the number of subagents when there are any.
 
 ### Overview tab
-Usage tiles, tokens over time, git panel, usage by model.
+Usage tiles, tokens per message, cache efficiency, git panel, usage by model.
+
+- **Tiles** with icons and a one-line context: cost (cost per hour of session time), input (fresh, not cached), output (share of all tokens), cache read (hit rate), cache write (share of input), subagents (how many run now).
+- **Tokens per message**: one area chart of input, output and cache read per API message, with series toggles and a hover cursor.
+- **Cache efficiency**: a ring of cache read / all input, with the cache read, cache write and fresh input figures.
+- **Git**: branch chip with ahead, behind and uncommitted (or clean) chips; changed files grouped by change type (conflicted, untracked, renamed, deleted, added, modified), each with a type badge; recent commits and worktrees.
+- **Usage by model**: one row per model with its in / out / cache split and a share bar. The share is of the session's tokens, since the UI has no per-model price; the session's main model is tagged.
 
 ### Events tab
-Paged event list, newest first; hook events hidden unless shown; a row expands to its truncated detail.
+A timeline of the loaded events, newest first.
+
+- Each row: time, an icon per kind (tool calls by tool category, results, assistant, thinking, hook, subagent, error), the tool name, the summary, and output tokens (assistant) or duration (a result, from its call).
+- Each user prompt starts a turn: a separator with its time, the prompt and the turn's tool-call and error counts.
+- **Filter chips** with counts: All (everything but hooks, the default), Assistant, Tools, Hooks, Errors. **Search** over tool name and summary. Both work client-side on the loaded events, and the note under them says how many that is.
+- Errors are highlighted in rose; subagent events are indented and tagged with the agent.
+- A row with detail expands inline, with a Copy button and the "truncated by the parser" note.
+- "Following live" while the newest event is in view; otherwise a "Jump to latest · n new" button counts events that arrived since. "Load older events" fetches the previous page.
 
 ### Flow tab
 A dagre-laid-out graph of turns → tools and subagents, updated live without moving the viewport.

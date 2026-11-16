@@ -1,25 +1,28 @@
 import { useEffect, useState } from "react";
 import type { GitFile, GitInfo } from "@claude-monitor/shared";
 import { api } from "../api";
+import { Icon } from "./Icon";
 
 const POLL_MS = 5000;
 
-const GROUPS: { label: string; match: (status: string) => boolean }[] = [
-  { label: "Conflicted", match: (s) => s.includes("U") || s === "AA" || s === "DD" },
-  { label: "Untracked", match: (s) => s === "??" },
-  { label: "Renamed", match: (s) => s.includes("R") },
-  { label: "Deleted", match: (s) => s.includes("D") },
-  { label: "Added", match: (s) => s.includes("A") },
-  { label: "Modified", match: () => true },
+type ChangeType = "conflicted" | "untracked" | "renamed" | "deleted" | "added" | "modified";
+
+const GROUPS: { type: ChangeType; label: string; badge: string; match: (status: string) => boolean }[] = [
+  { type: "conflicted", label: "Conflicted", badge: "U", match: (s) => s.includes("U") || s === "AA" || s === "DD" },
+  { type: "untracked", label: "Untracked", badge: "?", match: (s) => s === "??" },
+  { type: "renamed", label: "Renamed", badge: "R", match: (s) => s.includes("R") },
+  { type: "deleted", label: "Deleted", badge: "D", match: (s) => s.includes("D") },
+  { type: "added", label: "Added", badge: "A", match: (s) => s.includes("A") },
+  { type: "modified", label: "Modified", badge: "M", match: () => true },
 ];
 
-function groupFiles(files: GitFile[]): { label: string; files: GitFile[] }[] {
-  const out = new Map<string, GitFile[]>();
+function groupFiles(files: GitFile[]) {
+  const out = new Map<ChangeType, GitFile[]>();
   for (const file of files) {
-    const label = GROUPS.find((g) => g.match(file.status))!.label;
-    out.set(label, [...(out.get(label) ?? []), file]);
+    const type = GROUPS.find((g) => g.match(file.status))!.type;
+    out.set(type, [...(out.get(type) ?? []), file]);
   }
-  return GROUPS.filter((g) => out.has(g.label)).map((g) => ({ label: g.label, files: out.get(g.label)! }));
+  return GROUPS.filter((g) => out.has(g.type)).map((g) => ({ ...g, files: out.get(g.type)! }));
 }
 
 export function GitPanel({ sessionId }: { sessionId: string }) {
@@ -53,26 +56,35 @@ export function GitPanel({ sessionId }: { sessionId: string }) {
 
   return (
     <div className="git">
-      <p className="git-branch">
-        <strong>{info.branch}</strong>
-        <span className="muted">
-          {" "}
-          {info.ahead} ahead, {info.behind} behind
+      <div className="git-branch">
+        <span className="chip">
+          <Icon name="branch" size={14} />
+          <strong>{info.branch}</strong>
         </span>
-        {failed && <span className="muted"> · last known state</span>}
-      </p>
+        <span className={`chip ${info.ahead > 0 ? "chip-accent" : ""}`}>{info.ahead} ahead</span>
+        <span className={`chip ${info.behind > 0 ? "chip-warning" : ""}`}>{info.behind} behind</span>
+        <span className={`chip ${info.dirty.length > 0 ? "chip-warning" : "chip-good"}`}>
+          {info.dirty.length === 0 ? "Clean" : `${info.dirty.length} uncommitted`}
+        </span>
+        {failed && <span className="muted small">last known state</span>}
+      </div>
       <div className="git-columns">
         <div>
           <h3>Changes ({info.dirty.length})</h3>
           {info.dirty.length === 0 && <p className="empty">Working tree clean.</p>}
           {groupFiles(info.dirty).map((group) => (
-            <div key={group.label} className="git-group">
-              <div className="muted">
+            <div key={group.type} className="git-group">
+              <div className="lbl">
                 {group.label} ({group.files.length})
               </div>
-              <ul>
+              <ul className="git-files">
                 {group.files.map((f) => (
-                  <li key={f.path}>{f.path}</li>
+                  <li key={f.path}>
+                    <span className={`git-badge git-${group.type}`} title={group.label}>
+                      {group.badge}
+                    </span>
+                    <span className="mono">{f.path}</span>
+                  </li>
                 ))}
               </ul>
             </div>
@@ -84,7 +96,7 @@ export function GitPanel({ sessionId }: { sessionId: string }) {
           <ul className="commits">
             {info.recentCommits.map((c) => (
               <li key={c.hash}>
-                <code>{c.hash}</code> {c.subject}
+                <code className="hash">{c.hash}</code> {c.subject}
                 <div className="muted small">
                   {c.author}, {c.relativeDate}
                 </div>
@@ -95,7 +107,7 @@ export function GitPanel({ sessionId }: { sessionId: string }) {
           <ul>
             {info.worktrees.map((w) => (
               <li key={w.path}>
-                {w.path} <span className="muted">{w.branch ?? w.head}</span>
+                <span className="mono">{w.path}</span> <span className="muted">{w.branch ?? w.head}</span>
               </li>
             ))}
           </ul>
