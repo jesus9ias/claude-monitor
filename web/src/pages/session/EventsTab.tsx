@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { classifyTool, type Event, type EventKind } from "@claude-monitor/shared";
 import { api, subscribe } from "../../api";
 import { CATEGORY_ICON, Icon, type IconName } from "../../components/Icon";
@@ -131,7 +132,9 @@ export function EventsTab() {
   const [events, setEvents] = useState<Event[]>([]);
   const [nextBefore, setNextBefore] = useState<string | undefined>();
   const [filter, setFilter] = useState<Filter>("all");
-  const [query, setQuery] = useState("");
+  // A link can open the tab already searched (the Flow inspector does).
+  const [searchParams] = useSearchParams();
+  const [query, setQuery] = useState(() => searchParams.get("q") ?? "");
   const [following, setFollowing] = useState(true);
   const [unseen, setUnseen] = useState(0);
   const topRef = useRef<HTMLDivElement>(null);
