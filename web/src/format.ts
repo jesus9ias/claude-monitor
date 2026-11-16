@@ -28,7 +28,13 @@ export function formatDuration(ms: number): string {
 export const formatTime = (iso: string): string =>
   new Date(iso).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
 
-export const projectName = (cwd: string): string => cwd.split(/[\\/]/).filter(Boolean).pop() ?? cwd;
+/** Absolute local date and time, for tooltips next to relative times. */
+export const formatDateTime = (iso: string): string =>
+  new Date(iso).toLocaleString("en-US", { weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+
+export const formatPct = (v: number): string => `${Math.round(v * 100)}%`;
+
+export const projectName =(cwd: string): string => cwd.split(/[\\/]/).filter(Boolean).pop() ?? cwd;
 
 /** Re-renders on an interval, so relative times and elapsed counters keep moving. */
 export function useNow(intervalMs = 1000): number {

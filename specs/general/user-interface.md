@@ -72,13 +72,23 @@ Scenario: quota alerts fire once per window reset, at the lowest crossed thresho
 ```
 
 ## Sessions page
-The landing page: range picker, totals, cost by day, and the live session table.
+The landing page: range picker, totals, usage by day, and the live session table.
 
-Range picker (today, 7 days, 30 days), tiles (cost, tokens, active now), cost by day per model with a model share donut, and the session table (status, activity, project, model, tokens, cost, last activity). It updates live.
+Range picker (today, 7 days, 30 days) and four tiles, each with an icon: estimated cost and tokens (each with a sparkline of the range's daily rows), active now, and the **cache hit rate** (cache read / all input: input + cache read + cache write) for the range, with its daily sparkline. It updates live.
+
+**Usage by day**: stacked bars per model with a **Cost / Tokens** toggle. The legend is clickable: a model can be hidden, and day totals and the average follow what is shown. Each bar has its day total above it and a dashed line marks the daily average; the tooltip lists each model and the total. Beside the chart, a by-model bar list (share and value over the range, heaviest first). A table view is available. Cost excludes models with no price.
+
+**Session table**: status, session (title, project), model, **Doing now** (the activity with its tool-category icon), tokens (a stacked in / out / cache bar, scaled to the largest shown session), cost (a bar relative to the costliest shown row), last activity (absolute time on hover) and a row action that copies the session id.
+- **Search** over project name, title and id; Ctrl K (Cmd K) focuses it.
+- **Status chips** (All, Active, Idle, Ended) with counts of the sessions the search and model filter leave, and a **model filter**.
+- **Sortable columns** (status, session, model, tokens, cost, last activity) with the direction shown; default last activity, newest first. The header stays visible while the table scrolls.
+- A footer reads "Showing n of m", m being the sessions in the range, with a "Clear filters" link when a filter is on.
+- The table scrolls sideways inside its card. Below 768 px rows become cards (status, title, project, model, activity, cost bar).
+- Search, filters and sort apply to both views and combine with the range filter. They are client-side and not remembered across reloads.
 
 The session table has two views, chosen with a **History / By project** toggle (default History):
-- **History**: one flat list, newest activity first.
-- **By project**: sessions grouped by full `cwd` (same folder name in different paths stays apart), groups ordered by latest activity. Each group's header row shows the project name (full path on hover), session count, active count, summed in + out and cache tokens, summed cost (`n/a` if any session's cost is unknown) and latest activity. A header collapses and expands its group by mouse or keyboard; groups start expanded.
+- **History**: one flat list in the chosen sort order (default newest activity first).
+- **By project**: sessions grouped by full `cwd` (same folder name in different paths stays apart), groups ordered by latest activity. Each group's header row shows the project name (full path on hover), session count, active count, summed tokens (in + out and cache split on hover), summed cost (`n/a` if any session's cost is unknown) and latest activity. A header collapses and expands its group by mouse or keyboard; groups start expanded.
 - The chosen view and the collapsed groups are remembered per browser in `localStorage`; without storage the page still works and starts in History. Grouping is client-side only.
 
 The session table follows the range picker:

@@ -2,7 +2,7 @@
 id: CLM-7                       # assigned by `flow new`, never by hand
 title: "Glass Dark: Sessions page tiles, cost chart and session table"
 type: change                   # feature | change | bug | refactor | chore
-status: approved               # draft | approved | in_progress | validating | done | blocked | cancelled
+status: draft               # draft | approved | in_progress | validating | done | blocked | cancelled
 priority: medium           # low | medium | high | critical
 
 # Placement
@@ -88,3 +88,5 @@ Append-only. One row per change to the ticket, always with a reason. Written by 
 | 2026-11-14 | refined | definition | Wrote the definition from the Glass Dark design proposal, split out of CLM-5 |
 | 2026-11-14 | contradiction-check | check | clean: only user-interface.md#sessions-page; keeps CLM-3 grouping and CLM-4 range filter, search and filters combine with them; no sibling touches this section |
 | 2026-11-14 | status | status: draft → approved | The author approved the Glass Dark epic and all its tickets in chat |
+| 2026-11-16 | refined | definition | Implementation done ahead of the status move: CLM-5 is validating, waiting on the author's manual check, so CLM-7 cannot enter in_progress yet |
+| 2026-11-16 | status | status: approved → draft | Definition changed after approval; needs re-approval |
