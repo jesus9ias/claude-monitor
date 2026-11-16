@@ -1,54 +1,97 @@
 import { useMemo, useState } from "react";
-import { CartesianGrid, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { CartesianGrid, Line, LineChart, ReferenceArea, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { QuotaSample } from "@claude-monitor/shared";
+
+type Key = "fiveHour" | "sevenDay";
 
 interface Point {
   t: number;
-  fiveHour: number | null;
-  sevenDay: number | null;
+  fiveHour?: number | null;
+  sevenDay?: number | null;
+  fiveHourProj?: number;
+  sevenDayProj?: number;
+}
+
+/** A dashed line from now to a later time at the current pace (used %). */
+export interface Projection {
+  key: Key;
+  from: { t: number; used: number };
+  to: { t: number; used: number };
 }
 
 const SERIES = [
-  { key: "fiveHour", label: "5-hour", color: "var(--series-1)" },
-  { key: "sevenDay", label: "Weekly", color: "var(--series-2)" },
+  { key: "fiveHour", label: "5-hour", color: "var(--ember)" },
+  { key: "sevenDay", label: "Weekly", color: "var(--iris)" },
 ] as const;
 
 const fmtDay = (t: number): string => new Date(t).toLocaleString("en-US", { weekday: "short", hour: "2-digit", minute: "2-digit", hour12: false });
-const pct = (v: number | null): string => (v === null ? "-" : `${Math.round(v)}%`);
+const pct = (v: number | null | undefined): string => (v === null || v === undefined ? "-" : `${Math.round(v)}%`);
 
 function HistoryTooltip({ active, payload }: any) {
   if (!active || !payload?.length) return null;
   const p: Point = payload[0].payload;
+  const projected = p.fiveHour === undefined && p.sevenDay === undefined;
   return (
     <div className="chart-tooltip">
-      <div className="chart-tooltip-title">{fmtDay(p.t)}</div>
+      <div className="chart-tooltip-title">
+        {fmtDay(p.t)}
+        {projected && " · projected"}
+      </div>
       {SERIES.map((s) => (
         <div className="chart-tooltip-row" key={s.key}>
-          <span>
-            <span className="swatch" style={{ background: s.color }} /> {s.label} used
-          </span>
-          <strong>{pct(p[s.key])}</strong>
+          <span className="swatch" style={{ background: s.color }} />
+          <span>{s.label} used</span>
+          <strong>{pct(projected ? p[`${s.key}Proj`] : p[s.key])}</strong>
         </div>
       ))}
     </div>
   );
 }
 
-/** Used % of each window over time. A drop of more than 10 points marks a 5-hour reset. */
-export function QuotaHistoryChart({ samples }: { samples: QuotaSample[] }) {
+/**
+ * Used % of each window over time, with the "getting low" and "almost out" bands, reset markers
+ * (a 5-hour drop of more than 10 points), a "now" marker and the projection at the current pace.
+ */
+export function QuotaHistoryChart({ samples, projections = [], now }: { samples: QuotaSample[]; projections?: Projection[]; now?: number }) {
   const [asTable, setAsTable] = useState(false);
-  const points = useMemo<Point[]>(() => samples.map((s) => ({ t: Date.parse(s.ts), fiveHour: s.fiveHour, sevenDay: s.sevenDay })), [samples]);
+  const readings = useMemo<Point[]>(() => samples.map((s) => ({ t: Date.parse(s.ts), fiveHour: s.fiveHour, sevenDay: s.sevenDay })), [samples]);
   const resets = useMemo(
-    () => points.filter((p, i) => i > 0 && p.fiveHour !== null && points[i - 1]!.fiveHour !== null && p.fiveHour < points[i - 1]!.fiveHour! - 10).map((p) => p.t),
-    [points],
+    () =>
+      readings
+        .filter((p, i) => i > 0 && p.fiveHour != null && readings[i - 1]!.fiveHour != null && p.fiveHour < readings[i - 1]!.fiveHour! - 10)
+        .map((p) => p.t),
+    [readings],
   );
+  const points = useMemo<Point[]>(() => {
+    const extra: Point[] = [];
+    for (const pr of projections) {
+      extra.push({ t: pr.from.t, [`${pr.key}Proj`]: pr.from.used }, { t: pr.to.t, [`${pr.key}Proj`]: Math.min(100, pr.to.used) });
+    }
+    return [...readings, ...extra].sort((a, b) => a.t - b.t);
+  }, [readings, projections]);
 
-  if (points.length < 2) return <p className="empty">History builds up as readings arrive. Each refresh adds a point.</p>;
+  if (readings.length < 2) return <p className="empty">History builds up as readings arrive. Each refresh adds a point.</p>;
 
   return (
     <>
-      <div className="chart-head">
-        <span className="muted small">{points.length} readings · dashed lines mark 5-hour resets</span>
+      <div className="chart-head wrap">
+        <div className="legend">
+          {SERIES.map((s) => (
+            <span key={s.key} className="legend-item">
+              <span className="swatch" style={{ background: s.color }} />
+              {s.label}
+            </span>
+          ))}
+          <span className="legend-item">
+            <span className="swatch band-low" />
+            Getting low
+          </span>
+          <span className="legend-item">
+            <span className="swatch band-out" />
+            Almost out
+          </span>
+          <span className="legend-item muted">dashed: resets and projection</span>
+        </div>
         <button className="ghost" onClick={() => setAsTable((v) => !v)} aria-pressed={asTable}>
           {asTable ? "Chart" : "Table"}
         </button>
@@ -64,7 +107,7 @@ export function QuotaHistoryChart({ samples }: { samples: QuotaSample[] }) {
               </tr>
             </thead>
             <tbody>
-              {[...points].reverse().map((p) => (
+              {[...readings].reverse().map((p) => (
                 <tr key={p.t}>
                   <td>{fmtDay(p.t)}</td>
                   <td className="num">{pct(p.fiveHour)}</td>
@@ -75,8 +118,10 @@ export function QuotaHistoryChart({ samples }: { samples: QuotaSample[] }) {
           </table>
         </div>
       ) : (
-        <ResponsiveContainer width="100%" height={240}>
+        <ResponsiveContainer width="100%" height={260}>
           <LineChart data={points} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
+            <ReferenceArea y1={70} y2={90} fill="var(--amber)" fillOpacity={0.08} ifOverflow="hidden" />
+            <ReferenceArea y1={90} y2={100} fill="var(--rose)" fillOpacity={0.12} ifOverflow="hidden" />
             <CartesianGrid vertical={false} stroke="var(--grid)" />
             <XAxis
               dataKey="t"
@@ -92,8 +137,10 @@ export function QuotaHistoryChart({ samples }: { samples: QuotaSample[] }) {
             {resets.map((t) => (
               <ReferenceLine key={t} x={t} stroke="var(--baseline)" strokeDasharray="3 3" />
             ))}
+            {now !== undefined && (
+              <ReferenceLine x={now} stroke="var(--text-secondary)" label={{ value: "now", position: "insideTopLeft", fill: "var(--text-secondary)", fontSize: 11 }} />
+            )}
             <Tooltip content={<HistoryTooltip />} cursor={{ stroke: "var(--baseline)" }} isAnimationActive={false} />
-            <Legend iconType="plainline" wrapperStyle={{ fontSize: 12, color: "var(--text-secondary)" }} />
             {SERIES.map((s) => (
               <Line
                 key={s.key}
@@ -103,7 +150,20 @@ export function QuotaHistoryChart({ samples }: { samples: QuotaSample[] }) {
                 strokeWidth={2}
                 dot={false}
                 connectNulls
-                activeDot={{ r: 4, stroke: "var(--surface)", strokeWidth: 2 }}
+                activeDot={{ r: 4, stroke: "var(--ink)", strokeWidth: 2 }}
+                isAnimationActive={false}
+              />
+            ))}
+            {SERIES.map((s) => (
+              <Line
+                key={`${s.key}Proj`}
+                dataKey={`${s.key}Proj`}
+                stroke={s.color}
+                strokeWidth={2}
+                strokeDasharray="6 5"
+                dot={false}
+                connectNulls
+                activeDot={false}
                 isAnimationActive={false}
               />
             ))}

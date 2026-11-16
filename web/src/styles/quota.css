@@ -98,3 +98,144 @@
 .quota-row-label {
   color: var(--text-secondary);
 }
+
+/* ---- Glass Dark Quota and Processes (CLM-10) ---- */
+.gauge-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px 24px;
+}
+
+.gauge {
+  flex: none;
+}
+
+.gauge-facts {
+  flex: 1 1 200px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gauge-facts strong {
+  font-family: var(--font-display);
+  font-size: 22px;
+}
+
+.gauge-reset {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.quota-pace {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.quota-row {
+  grid-template-columns: minmax(80px, 140px) minmax(0, 1fr) auto;
+}
+
+.meter-wrap {
+  position: relative;
+}
+
+.meter-wrap .meter {
+  margin: 0;
+}
+
+.meter-mark {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 2px;
+  background: var(--text-secondary);
+}
+
+.band-low {
+  background: rgba(245, 192, 78, 0.35);
+}
+
+.band-out {
+  background: rgba(255, 122, 144, 0.45);
+}
+
+.share-rank {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.share-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: var(--radius-control);
+  color: var(--text);
+}
+
+.share-row:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.share-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.share-val {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+}
+
+.share-row .hbar {
+  height: 8px;
+}
+
+.alert-thresholds {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.cpu-cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.spark-empty {
+  display: inline-block;
+  width: 72px;
+}
+
+table.procs td {
+  vertical-align: middle;
+}
+
+@media (max-width: 767px) {
+  .quota-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .quota-row .num {
+    text-align: left;
+  }
+}

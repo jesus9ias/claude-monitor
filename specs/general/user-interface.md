@@ -25,12 +25,12 @@ The app shell's navigation: a side menu from 768 px up, a phone header and botto
 ## Quota page
 `/quota` shows both windows, a pace projection, per-model weeks, 7-day history, the session split of the current 5-hour window, and alert settings.
 
-- One card per window (5-hour, weekly): percentage left, a level label (OK, getting low, almost out), a meter of the used part, and the reset countdown.
+- One card per window (5-hour, weekly): a radial gauge of the percentage left, the level as word, icon and color (OK, getting low, almost out), the used %, the reset countdown and the pace sentence.
 - **Pace**: a least-squares line over the window's readings since its last reset. The 5-hour window looks back 1 hour, the weekly window 24 hours. The card says when the window runs out at that rate and whether that comes before the reset. It needs at least two readings 5 minutes apart, and it is labelled as an estimate.
-- Weekly windows per model, when the plan has them.
-- History: used % of both windows over 7 days. A drop of more than 10 points in the 5-hour window is drawn as a reset. A table view is available.
-- **Who used the current 5-hour window**: each session's share since the window started (reset time minus 5 hours), weighted by estimated API cost. Anthropic does not say how tokens map to quota percent, so this is a relative split.
-- Alerts: the thresholds in use and a button to allow browser notifications. `useQuotaAlerts` (mounted at the app root) notifies once per window, reset and threshold, choosing the lowest threshold crossed. It only fires while a monitor tab is open.
+- Weekly windows per model, when the plan has them: meters with marks at the configured alert thresholds.
+- History: used % of both windows over 7 days, over shaded bands for getting low (70–90 % used) and almost out (90 % and up). A drop of more than 10 points in the 5-hour window is drawn as a reset. A "now" marker and a dashed projection at the current pace run to each window's reset (the weekly one at most 24 hours ahead, so the 7 days stay readable). A table view is available.
+- **Who used the current 5-hour window**: each session's share since the window started (reset time minus 5 hours), weighted by estimated API cost, as a ranking of horizontal share bars; each row links to its session and shows tokens, output and cost under the title. Anthropic does not say how tokens map to quota percent, so this is a relative split.
+- Alerts: the browser's notification permission as a status chip, the thresholds in use as chips, and a button to allow browser notifications. `useQuotaAlerts` (mounted at the app root) notifies once per window, reset and threshold, choosing the lowest threshold crossed. It only fires while a monitor tab is open.
 
 ```gherkin
 @sc-quota-pace
@@ -124,6 +124,10 @@ Scenario: the session table follows the date range
 
 ## Processes page
 Live `claude` processes and the session each one belongs to; read-only.
+
+- **Tiles**: processes (and how many are linked to a session), total CPU, total memory, unlinked processes.
+- **Table**: sorted by CPU, highest first, by default; CPU and memory headers sort either way. CPU shows the value and a sparkline of the samples received since the page opened (page state, at most 60 per process, dropped when the process goes). Memory shows a bar relative to the largest process. The project cell shows the folder name and the full cwd in mono.
+- A process with no session is tagged **Unlinked**, with a note explaining what that means.
 
 ## Session view
 `/sessions/:id/:tab` shows the session header and one of four tabs: Overview, Events, Flow, Pipeline.

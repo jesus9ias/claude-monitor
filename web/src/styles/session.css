@@ -709,3 +709,25 @@
     bottom: 96px;
   }
 }
+
+@media (max-width: 520px) {
+  .session-head .tabs {
+    width: 100%;
+  }
+
+  .session-head .tabs a {
+    flex: 1;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 6px;
+    font-size: 13px;
+  }
+
+  .session-head .tabs .icon {
+    display: none;
+  }
+
+  .tab-count {
+    display: none;
+  }
+}

@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { projectPace, remainingPct, type QuotaAttributionRow, type QuotaSample, type QuotaWindow } from "@claude-monitor/shared";
+import { projectPace, remainingPct, type Pace, type QuotaAttributionRow, type QuotaSample, type QuotaWindow } from "@claude-monitor/shared";
 import { api, subscribe } from "../api";
-import { QuotaHistoryChart } from "../components/QuotaHistoryChart";
+import { Icon, type IconName } from "../components/Icon";
+import { QuotaHistoryChart, type Projection } from "../components/QuotaHistoryChart";
 import { formatAgo, formatCost, formatDuration, formatTokens, projectName, useNow } from "../format";
 import { notificationsSupported } from "../state/alerts";
 import { useLive } from "../state/live";
@@ -10,10 +11,17 @@ import { useLive } from "../state/live";
 const FIVE_HOURS = 5 * 3_600_000;
 const HISTORY_DAYS = 7;
 const ATTRIBUTION_REFRESH_MS = 30_000;
+const FIVE_LOOKBACK = 60 * 60_000;
+const WEEK_LOOKBACK = 24 * 3_600_000;
+/** The weekly projection is drawn at most this far ahead, so the 7-day chart stays readable. */
+const WEEK_PROJECTION_MAX = 24 * 3_600_000;
 const NO_ALERTS: number[] = [];
 
-const level = (left: number): "good" | "warning" | "critical" => (left <= 10 ? "critical" : left <= 30 ? "warning" : "good");
-const LEVEL_LABEL = { good: "OK", warning: "Getting low", critical: "Almost out" };
+type Level = "good" | "warning" | "critical";
+const level = (left: number): Level => (left <= 10 ? "critical" : left <= 30 ? "warning" : "good");
+const LEVEL_LABEL: Record<Level, string> = { good: "OK", warning: "Getting low", critical: "Almost out" };
+const LEVEL_ICON: Record<Level, IconName> = { good: "ok", warning: "warning", critical: "error" };
+const LEVEL_COLOR: Record<Level, string> = { good: "var(--teal)", warning: "var(--amber)", critical: "var(--rose)" };
 
 function resetText(w: QuotaWindow, now: number): string | null {
   if (!w.resetsAt) return null;
@@ -22,7 +30,42 @@ function resetText(w: QuotaWindow, now: number): string | null {
   return at > now ? `Resets in ${formatDuration(at - now)} (${when})` : `Reset due ${when}`;
 }
 
-function WindowCard({ title, w, samples, lookbackMs, now }: { title: string; w?: QuotaWindow; samples: { ts: string; usedPct: number }[]; lookbackMs: number; now: number }) {
+function paceText(pace: Pace | undefined, now: number): string {
+  if (pace === undefined) return "Pace: needs a few more readings.";
+  if (!pace.exhaustAt) return `Pace: about flat (${pace.ratePctPerHour.toFixed(1)} pts/h).`;
+  if (pace.beforeReset === false) return `Pace: ${pace.ratePctPerHour.toFixed(1)} pts/h. At this rate it lasts until the reset.`;
+  return `Pace: ${pace.ratePctPerHour.toFixed(1)} pts/h. At this rate it runs out in ~${formatDuration(Date.parse(pace.exhaustAt) - now)}${pace.beforeReset ? ", before the reset" : ""}.`;
+}
+
+/** Ring of the percentage left, colored by level. */
+function Gauge({ left, lv, label }: { left: number; lv: Level; label: string }) {
+  const r = 56;
+  const c = 2 * Math.PI * r;
+  return (
+    <svg width={140} height={140} viewBox="0 0 140 140" role="img" aria-label={`${label}: ${Math.round(left)} percent left, ${LEVEL_LABEL[lv]}`} className="gauge">
+      <circle cx={70} cy={70} r={r} fill="none" stroke="rgba(0,0,0,.35)" strokeWidth={12} />
+      <circle
+        cx={70}
+        cy={70}
+        r={r}
+        fill="none"
+        stroke={LEVEL_COLOR[lv]}
+        strokeWidth={12}
+        strokeLinecap="round"
+        strokeDasharray={`${(left / 100) * c} ${c}`}
+        transform="rotate(-90 70 70)"
+      />
+      <text x={70} y={70} textAnchor="middle" className="ring-value">
+        {Math.round(left)}%
+      </text>
+      <text x={70} y={90} textAnchor="middle" className="ring-label">
+        left
+      </text>
+    </svg>
+  );
+}
+
+function WindowCard({ title, w, pace, now }: { title: string; w?: QuotaWindow; pace: Pace | undefined; now: number }) {
   if (!w) {
     return (
       <div className="card quota-card">
@@ -33,32 +76,50 @@ function WindowCard({ title, w, samples, lookbackMs, now }: { title: string; w?:
   }
   const left = remainingPct(w)!;
   const lv = level(left);
-  const pace = projectPace(samples, w, now, lookbackMs);
   return (
     <div className="card quota-card">
-      <h2>{title}</h2>
-      <div className="quota-big">
-        <span className="quota-big-value">{Math.round(left)}%</span>
-        <span className="muted">left</span>
-        <span className={`quota-level quota-level-${lv}`}>{LEVEL_LABEL[lv]}</span>
+      <div className="chart-head">
+        <h2>{title}</h2>
+        <span className={`chip chip-${lv}`}>
+          <Icon name={LEVEL_ICON[lv]} size={14} />
+          {LEVEL_LABEL[lv]}
+        </span>
       </div>
-      <div className="meter" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(w.usedPct)} aria-label={`${title} used`}>
-        <div className={`meter-fill meter-${lv}`} style={{ width: `${Math.min(100, Math.max(0, w.usedPct))}%` }} />
+      <div className="gauge-row">
+        <Gauge left={left} lv={lv} label={title} />
+        <div className="gauge-facts">
+          <div>
+            <strong>{Math.round(w.usedPct)}%</strong> <span className="muted">used</span>
+          </div>
+          {resetText(w, now) && (
+            <div className="muted small gauge-reset">
+              <Icon name="time" size={14} />
+              {resetText(w, now)}
+            </div>
+          )}
+          <p className="quota-pace">
+            {paceText(pace, now)}
+            <span className="muted small"> Estimate.</span>
+          </p>
+        </div>
       </div>
-      <div className="muted small">
-        {Math.round(w.usedPct)}% used{resetText(w, now) && ` · ${resetText(w, now)}`}
-      </div>
-      <p className="quota-pace">
-        {pace === undefined
-          ? "Pace: needs a few more readings."
-          : !pace.exhaustAt
-            ? `Pace: about flat (${pace.ratePctPerHour.toFixed(1)} pts/h).`
-            : pace.beforeReset === false
-              ? `Pace: ${pace.ratePctPerHour.toFixed(1)} pts/h. At this rate it lasts until the reset.`
-              : `Pace: ${pace.ratePctPerHour.toFixed(1)} pts/h. At this rate it runs out in ~${formatDuration(Date.parse(pace.exhaustAt) - now)}${pace.beforeReset ? ", before the reset" : ""}.`}
-        <span className="muted small"> Estimate.</span>
-      </p>
     </div>
+  );
+}
+
+function PermissionChip({ permission }: { permission: string }) {
+  const map: Record<string, { cls: string; icon: IconName; text: string }> = {
+    granted: { cls: "chip-good", icon: "ok", text: "Notifications on" },
+    default: { cls: "chip-warning", icon: "bell", text: "Not enabled yet" },
+    denied: { cls: "chip-critical", icon: "error", text: "Blocked by the browser" },
+    unsupported: { cls: "", icon: "input", text: "Not supported" },
+  };
+  const m = map[permission] ?? map.unsupported!;
+  return (
+    <span className={`chip ${m.cls}`}>
+      <Icon name={m.icon} size={14} />
+      {m.text}
+    </span>
   );
 }
 
@@ -71,22 +132,31 @@ function AlertsCard() {
   };
   return (
     <section className="card">
-      <h2>Alerts</h2>
+      <div className="chart-head wrap">
+        <h2>Alerts</h2>
+        {thresholds.length > 0 && <PermissionChip permission={permission} />}
+      </div>
       {!thresholds.length ? (
         <p className="muted">Off. Set CLAUDE_MONITOR_QUOTA_ALERTS in .env to turn them on.</p>
       ) : (
         <>
-          <p>
-            A browser notification when a window drops to {thresholds.map((t) => `${t}%`).join(" or ")} left. Change it with CLAUDE_MONITOR_QUOTA_ALERTS in .env.
-          </p>
-          {permission === "granted" && <p className="muted small">Notifications are on for this browser. They only fire while a monitor tab is open.</p>}
+          <div className="alert-thresholds">
+            <span className="muted small">Notify when a window drops to</span>
+            {thresholds.map((t) => (
+              <span key={t} className="chip">
+                <Icon name="bell" size={14} />
+                {t}% left
+              </span>
+            ))}
+          </div>
+          <p className="muted small">Change it with CLAUDE_MONITOR_QUOTA_ALERTS in .env. Notifications only fire while a monitor tab is open.</p>
           {permission === "default" && (
-            <button className="ghost" onClick={ask}>
+            <button className="btn btn-primary" onClick={ask}>
+              <Icon name="bell" size={16} />
               Enable notifications
             </button>
           )}
-          {permission === "denied" && <p className="muted small">This browser blocks notifications for the monitor. Allow them in the site settings.</p>}
-          {permission === "unsupported" && <p className="muted small">This browser does not support notifications.</p>}
+          {permission === "denied" && <p className="muted small">Allow notifications for the monitor in the browser's site settings.</p>}
         </>
       )}
     </section>
@@ -96,6 +166,7 @@ function AlertsCard() {
 export function QuotaPage() {
   const quota = useLive((s) => s.quota);
   const configured = useLive((s) => s.meta?.quotaConfigured ?? false);
+  const thresholds = useLive((s) => s.meta?.quotaAlerts) ?? NO_ALERTS;
   const [history, setHistory] = useState<QuotaSample[]>([]);
   const [attribution, setAttribution] = useState<QuotaAttributionRow[] | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -136,7 +207,28 @@ export function QuotaPage() {
 
   const fiveSamples = useMemo(() => history.flatMap((s) => (s.fiveHour === null ? [] : [{ ts: s.ts, usedPct: s.fiveHour }])), [history]);
   const weekSamples = useMemo(() => history.flatMap((s) => (s.sevenDay === null ? [] : [{ ts: s.ts, usedPct: s.sevenDay }])), [history]);
+  const fivePace = projectPace(fiveSamples, quota?.fiveHour, now, FIVE_LOOKBACK);
+  const weekPace = projectPace(weekSamples, quota?.sevenDay, now, WEEK_LOOKBACK);
+
+  // Recomputed once a minute, not every tick, so the chart does not redraw each second.
+  const minute = Math.floor(now / 60_000);
+  const projections = useMemo<Projection[]>(() => {
+    const at = minute * 60_000;
+    const out: Projection[] = [];
+    const add = (key: Projection["key"], w: QuotaWindow | undefined, pace: Pace | undefined, maxAhead: number) => {
+      if (!w?.resetsAt || !pace) return;
+      const end = Math.min(Date.parse(w.resetsAt), at + maxAhead);
+      if (!(end > at)) return;
+      out.push({ key, from: { t: at, used: w.usedPct }, to: { t: end, used: w.usedPct + (pace.ratePctPerHour * (end - at)) / 3_600_000 } });
+    };
+    add("fiveHour", quota?.fiveHour, fivePace, FIVE_HOURS);
+    add("sevenDay", quota?.sevenDay, weekPace, WEEK_PROJECTION_MAX);
+    return out;
+    // The paces come from quota and history; the minute keeps the chart from redrawing every second.
+  }, [minute, quota, history]);
+
   const totalCost = attribution?.reduce((sum, r) => sum + r.costUsd, 0) ?? 0;
+  const maxCost = Math.max(0, ...(attribution ?? []).map((r) => r.costUsd));
 
   if (!quota || quota.status === "not_configured") {
     return (
@@ -166,15 +258,16 @@ export function QuotaPage() {
           </div>
         </div>
         {configured && (
-          <button className="ghost" onClick={refresh} disabled={refreshing}>
+          <button className="btn" onClick={refresh} disabled={refreshing}>
+            <Icon name="refresh" size={16} />
             {refreshing ? "Refreshing…" : "Refresh"}
           </button>
         )}
       </div>
 
       <div className="quota-grid">
-        <WindowCard title="5-hour window" w={quota.fiveHour} samples={fiveSamples} lookbackMs={60 * 60_000} now={now} />
-        <WindowCard title="Weekly window" w={quota.sevenDay} samples={weekSamples} lookbackMs={24 * 3_600_000} now={now} />
+        <WindowCard title="5-hour window" w={quota.fiveHour} pace={fivePace} now={now} />
+        <WindowCard title="Weekly window" w={quota.sevenDay} pace={weekPace} now={now} />
       </div>
 
       {quota.sevenDayByModel && (
@@ -182,22 +275,31 @@ export function QuotaPage() {
           <h2>Weekly, by model</h2>
           {Object.entries(quota.sevenDayByModel).map(([model, w]) => {
             const left = remainingPct(w)!;
+            const lv = level(left);
             return (
               <div key={model} className="quota-row">
                 <span className="quota-row-label">{model}</span>
-                <div className="meter" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(w.usedPct)} aria-label={`${model} weekly used`}>
-                  <div className={`meter-fill meter-${level(left)}`} style={{ width: `${Math.min(100, w.usedPct)}%` }} />
+                <div className="meter-wrap">
+                  <div className="meter" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(w.usedPct)} aria-label={`${model} weekly used`}>
+                    <div className={`meter-fill meter-${lv}`} style={{ width: `${Math.min(100, w.usedPct)}%` }} />
+                  </div>
+                  {thresholds.map((t) => (
+                    <span key={t} className="meter-mark" style={{ left: `${100 - t}%` }} title={`Alert at ${t}% left`} aria-hidden="true" />
+                  ))}
                 </div>
-                <span className="num">{Math.round(left)}% left</span>
+                <span className={`num qc-${lv}`}>
+                  {Math.round(left)}% left · {LEVEL_LABEL[lv]}
+                </span>
               </div>
             );
           })}
+          {thresholds.length > 0 && <p className="note">Marks show the alert thresholds ({thresholds.map((t) => `${t}%`).join(", ")} left).</p>}
         </section>
       )}
 
       <section className="card">
         <h2>Used over the last {HISTORY_DAYS} days</h2>
-        <QuotaHistoryChart samples={history} />
+        <QuotaHistoryChart samples={history} projections={projections} now={minute * 60_000} />
       </section>
 
       <section className="card">
@@ -209,33 +311,27 @@ export function QuotaPage() {
         {!attribution?.length ? (
           <p className="empty">No usage in this window yet.</p>
         ) : (
-          <div className="table-wrap">
-            <table className="rows">
-              <thead>
-                <tr>
-                  <th>Session</th>
-                  <th className="num">Share</th>
-                  <th className="num">Tokens</th>
-                  <th className="num">Output</th>
-                  <th className="num">Est. cost</th>
-                </tr>
-              </thead>
-              <tbody>
-                {attribution.map((r) => (
-                  <tr key={r.sessionId}>
-                    <td className="project">
-                      <Link to={`/sessions/${r.sessionId}`}>{r.title ?? projectName(r.cwd)}</Link>
-                      <div className="muted ellipsis">{projectName(r.cwd)}</div>
-                    </td>
-                    <td className="num">{totalCost > 0 ? `${Math.round((r.costUsd / totalCost) * 100)}%` : "-"}</td>
-                    <td className="num">{formatTokens(r.tokens)}</td>
-                    <td className="num">{formatTokens(r.outputTokens)}</td>
-                    <td className="num">{formatCost(r.costUsd)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ol className="share-rank">
+            {attribution.map((r) => {
+              const share = totalCost > 0 ? r.costUsd / totalCost : 0;
+              return (
+                <li key={r.sessionId}>
+                  <Link to={`/sessions/${r.sessionId}`} className="share-row">
+                    <div className="share-top">
+                      <span className="ellipsis-strong">{r.title ?? projectName(r.cwd)}</span>
+                      <strong className="share-val">{totalCost > 0 ? `${Math.round(share * 100)}%` : "-"}</strong>
+                    </div>
+                    <span className="hbar">
+                      <span style={{ width: `${maxCost ? (r.costUsd / maxCost) * 100 : 0}%`, background: "var(--ember)" }} />
+                    </span>
+                    <span className="muted small">
+                      {projectName(r.cwd)} · {formatTokens(r.tokens)} tokens · {formatTokens(r.outputTokens)} out · {formatCost(r.costUsd)}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ol>
         )}
       </section>
 
