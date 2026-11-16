@@ -2,7 +2,7 @@
 id: CLM-9                       # assigned by `flow new`, never by hand
 title: "Glass Dark: Flow and Pipeline tabs"
 type: change                   # feature | change | bug | refactor | chore
-status: approved               # draft | approved | in_progress | validating | done | blocked | cancelled
+status: done               # draft | approved | in_progress | validating | done | blocked | cancelled
 priority: medium           # low | medium | high | critical
 
 # Placement
@@ -32,7 +32,7 @@ touches:
   code_scope: [web/src/pages/session/FlowTab.tsx, web/src/pages/session/PipelineTab.tsx, web/src/pages/session/pipeline/**, web/src/styles/**, specs/general/user-interface.md]
 
 # Closure gate: set after implementation (required before done)
-claude_md: pending               # pending | updated | unchanged
+claude_md: unchanged               # pending | updated | unchanged
 ---
 
 # CLM-9 · Glass Dark: Flow and Pipeline tabs
@@ -57,12 +57,12 @@ See `user-interface.md#flow-tab` (dagre graph, folded groups, node drawer, runni
 - Reduced motion: still no particles or pulses; the active path is shown by color alone.
 
 ### Checklist
-- [ ] C1 — Flow nodes with icons and status borders, legend, grouped controls and status minimap · · verify: manual · impl: no · spec: no
-- [ ] C2 — Flow side inspector replaces the drawer, with the link to Events · · verify: manual · impl: no · spec: no
-- [ ] C3 — Pipeline block icons, colored active path and dimmed unused categories · · verify: manual · impl: no · spec: no
-- [ ] C4 — Replay transport bar with step, pause, speed and clickable timeline · · verify: manual · impl: no · spec: no
-- [ ] C5 — Last-turn calls per category as bars beside the diagram · · verify: manual · impl: no · spec: no
-- [ ] C6 — The build passes · · verify: command(npm run build) · impl: no · spec: no
+- [x] C1 — Flow nodes with icons and status borders, legend, grouped controls and status minimap · · verify: manual · impl: yes · spec: yes
+- [x] C2 — Flow side inspector replaces the drawer, with the link to Events · · verify: manual · impl: yes · spec: yes
+- [x] C3 — Pipeline block icons, colored active path and dimmed unused categories · · verify: manual · impl: yes · spec: yes
+- [x] C4 — Replay transport bar with step, pause, speed and clickable timeline · · verify: manual · impl: yes · spec: yes
+- [x] C5 — Last-turn calls per category as bars beside the diagram · · verify: manual · impl: yes · spec: yes
+- [x] C6 — The build passes · · verify: command(npm run build) · impl: yes · spec: yes
 
 ## Scenarios (after state)
 None: the web package has no automated tests and no Gherkin scenario in `user-interface.md` changes; the author checks every item in the browser.
@@ -87,3 +87,19 @@ Append-only. One row per change to the ticket, always with a reason. Written by 
 | 2026-11-14 | refined | definition | Wrote the definition from the Glass Dark design proposal, split out of CLM-5 |
 | 2026-11-14 | contradiction-check | check | clean: flow-tab and pipeline-tab only; replay keeps 4x default, the 350 ms to 2 s hold and the end-on-active rule; reduced motion kept; no sibling touches these sections |
 | 2026-11-14 | status | status: draft → approved | The author approved the Glass Dark epic and all its tickets in chat |
+| 2026-11-16 | status | status: approved → in_progress | Implementation committed earlier; CLM-5 is now done |
+| 2026-11-16 | item | C1.impl: no → yes | The author checked the Glass Dark design in the browser and approved it in chat on 2026-11-16 |
+| 2026-11-16 | item | C1.spec: no → yes | user-interface.md#flow-tab, #pipeline-tab |
+| 2026-11-16 | item | C2.impl: no → yes | The author checked the Glass Dark design in the browser and approved it in chat on 2026-11-16 |
+| 2026-11-16 | item | C2.spec: no → yes | user-interface.md#flow-tab, #pipeline-tab |
+| 2026-11-16 | item | C3.impl: no → yes | The author checked the Glass Dark design in the browser and approved it in chat on 2026-11-16 |
+| 2026-11-16 | item | C3.spec: no → yes | user-interface.md#flow-tab, #pipeline-tab |
+| 2026-11-16 | item | C4.impl: no → yes | The author checked the Glass Dark design in the browser and approved it in chat on 2026-11-16 |
+| 2026-11-16 | item | C4.spec: no → yes | user-interface.md#flow-tab, #pipeline-tab |
+| 2026-11-16 | item | C5.impl: no → yes | The author checked the Glass Dark design in the browser and approved it in chat on 2026-11-16 |
+| 2026-11-16 | item | C5.spec: no → yes | user-interface.md#flow-tab, #pipeline-tab |
+| 2026-11-16 | item | C6.impl: no → yes | npm run build passes |
+| 2026-11-16 | item | C6.spec: no → yes | user-interface.md#flow-tab, #pipeline-tab |
+| 2026-11-16 | set | claude_md: pending → unchanged | No new convention: uses the tokens, icons and components from CLM-5 |
+| 2026-11-16 | status | status: in_progress → validating | All items implemented and synced into the spec |
+| 2026-11-16 | status | status: validating → done | The author checked the Glass Dark design in the browser and approved it in chat on 2026-11-16 |

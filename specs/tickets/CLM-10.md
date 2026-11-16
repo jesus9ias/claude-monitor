@@ -2,7 +2,7 @@
 id: CLM-10                       # assigned by `flow new`, never by hand
 title: "Glass Dark: Processes and Quota pages"
 type: change                   # feature | change | bug | refactor | chore
-status: approved               # draft | approved | in_progress | validating | done | blocked | cancelled
+status: done               # draft | approved | in_progress | validating | done | blocked | cancelled
 priority: medium           # low | medium | high | critical
 
 # Placement
@@ -32,7 +32,7 @@ touches:
   code_scope: [web/src/pages/Processes.tsx, web/src/pages/Quota.tsx, web/src/components/QuotaHistoryChart.tsx, web/src/styles/**, specs/general/user-interface.md]
 
 # Closure gate: set after implementation (required before done)
-claude_md: pending               # pending | updated | unchanged
+claude_md: unchanged               # pending | updated | unchanged
 ---
 
 # CLM-10 · Glass Dark: Processes and Quota pages
@@ -58,12 +58,12 @@ See `user-interface.md#processes-page` (live processes and their session) and `#
 - Alerts: the notification permission shown as a status chip, the thresholds as chips; the enable button stays.
 
 ### Checklist
-- [ ] C1 — Processes tiles, CPU sort, CPU sparkline, memory bar and Unlinked tag · · verify: manual · impl: no · spec: no
-- [ ] C2 — Quota window gauges with level, reset and pace · · verify: manual · impl: no · spec: no
-- [ ] C3 — Per-model meters with threshold marks · · verify: manual · impl: no · spec: no
-- [ ] C4 — History chart bands, reset and now markers and projection; table view still available · · verify: manual · impl: no · spec: no
-- [ ] C5 — Share ranking linking to sessions, and the alerts permission chip · · verify: manual · impl: no · spec: no
-- [ ] C6 — The build passes · · verify: command(npm run build) · impl: no · spec: no
+- [x] C1 — Processes tiles, CPU sort, CPU sparkline, memory bar and Unlinked tag · · verify: manual · impl: yes · spec: yes
+- [x] C2 — Quota window gauges with level, reset and pace · · verify: manual · impl: yes · spec: yes
+- [x] C3 — Per-model meters with threshold marks · · verify: manual · impl: yes · spec: yes
+- [x] C4 — History chart bands, reset and now markers and projection; table view still available · · verify: manual · impl: yes · spec: yes
+- [x] C5 — Share ranking linking to sessions, and the alerts permission chip · · verify: manual · impl: yes · spec: yes
+- [x] C6 — The build passes · · verify: command(npm run build) · impl: yes · spec: yes
 
 ## Scenarios (after state)
 None: the web package has no automated tests and no Gherkin scenario in `user-interface.md` changes; the author checks every item in the browser.
@@ -88,3 +88,19 @@ Append-only. One row per change to the ticket, always with a reason. Written by 
 | 2026-11-14 | refined | definition | Wrote the definition from the Glass Dark design proposal, split out of CLM-5 |
 | 2026-11-14 | contradiction-check | check | clean: processes-page and quota-page only; pace, attribution and alert rules unchanged, only their display; no sibling touches these sections |
 | 2026-11-14 | status | status: draft → approved | The author approved the Glass Dark epic and all its tickets in chat |
+| 2026-11-16 | status | status: approved → in_progress | Implementation committed earlier; CLM-5 is now done |
+| 2026-11-16 | item | C1.impl: no → yes | The author checked the Glass Dark design in the browser and approved it in chat on 2026-11-16 |
+| 2026-11-16 | item | C1.spec: no → yes | user-interface.md#processes-page, #quota-page |
+| 2026-11-16 | item | C2.impl: no → yes | The author checked the Glass Dark design in the browser and approved it in chat on 2026-11-16 |
+| 2026-11-16 | item | C2.spec: no → yes | user-interface.md#processes-page, #quota-page |
+| 2026-11-16 | item | C3.impl: no → yes | The author checked the Glass Dark design in the browser and approved it in chat on 2026-11-16 |
+| 2026-11-16 | item | C3.spec: no → yes | user-interface.md#processes-page, #quota-page |
+| 2026-11-16 | item | C4.impl: no → yes | The author checked the Glass Dark design in the browser and approved it in chat on 2026-11-16 |
+| 2026-11-16 | item | C4.spec: no → yes | user-interface.md#processes-page, #quota-page |
+| 2026-11-16 | item | C5.impl: no → yes | The author checked the Glass Dark design in the browser and approved it in chat on 2026-11-16 |
+| 2026-11-16 | item | C5.spec: no → yes | user-interface.md#processes-page, #quota-page |
+| 2026-11-16 | item | C6.impl: no → yes | npm run build passes |
+| 2026-11-16 | item | C6.spec: no → yes | user-interface.md#processes-page, #quota-page |
+| 2026-11-16 | set | claude_md: pending → unchanged | No new convention: uses the tokens, icons and components from CLM-5 |
+| 2026-11-16 | status | status: in_progress → validating | All items implemented and synced into the spec |
+| 2026-11-16 | status | status: validating → done | The author checked the Glass Dark design in the browser and approved it in chat on 2026-11-16 |

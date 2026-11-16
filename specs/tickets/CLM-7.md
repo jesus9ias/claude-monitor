@@ -2,7 +2,7 @@
 id: CLM-7                       # assigned by `flow new`, never by hand
 title: "Glass Dark: Sessions page tiles, cost chart and session table"
 type: change                   # feature | change | bug | refactor | chore
-status: approved               # draft | approved | in_progress | validating | done | blocked | cancelled
+status: done               # draft | approved | in_progress | validating | done | blocked | cancelled
 priority: medium           # low | medium | high | critical
 
 # Placement
@@ -32,7 +32,7 @@ touches:
   code_scope: [web/src/pages/Sessions.tsx, web/src/components/CostByDayChart.tsx, web/src/format.ts, web/src/styles/**, specs/general/user-interface.md]
 
 # Closure gate: set after implementation (required before done)
-claude_md: pending               # pending | updated | unchanged
+claude_md: unchanged               # pending | updated | unchanged
 ---
 
 # CLM-7 · Glass Dark: Sessions page tiles, cost chart and session table
@@ -58,12 +58,12 @@ See `user-interface.md#sessions-page`: range picker, three tiles, cost by day pe
 - Search, filters and sort apply to both views and combine with the range filter; in By project, group totals count only the shown sessions, as today. Search, filters and sort are client-side and not remembered across reloads.
 
 ### Checklist
-- [ ] C1 — Tiles with icons, sparklines and the cache hit rate tile · · verify: manual · impl: no · spec: no
-- [ ] C2 — Cost chart with Cost/Tokens toggle, clickable legend, day totals, average line and by-model list · · verify: manual · impl: no · spec: no
-- [ ] C3 — Table search, status and model filters and sorting, combined with the range filter in both views · · verify: manual · impl: no · spec: no
-- [ ] C4 — Token and cost bars, Doing now column, absolute time on hover, copy id and count footer · · verify: manual · impl: no · spec: no
-- [ ] C5 — Cards below 768 px; History / By project and collapsed groups still work and are remembered · · verify: manual · impl: no · spec: no
-- [ ] C6 — The build passes · · verify: command(npm run build) · impl: no · spec: no
+- [x] C1 — Tiles with icons, sparklines and the cache hit rate tile · · verify: manual · impl: yes · spec: yes
+- [x] C2 — Cost chart with Cost/Tokens toggle, clickable legend, day totals, average line and by-model list · · verify: manual · impl: yes · spec: yes
+- [x] C3 — Table search, status and model filters and sorting, combined with the range filter in both views · · verify: manual · impl: yes · spec: yes
+- [x] C4 — Token and cost bars, Doing now column, absolute time on hover, copy id and count footer · · verify: manual · impl: yes · spec: yes
+- [x] C5 — Cards below 768 px; History / By project and collapsed groups still work and are remembered · · verify: manual · impl: yes · spec: yes
+- [x] C6 — The build passes · · verify: command(npm run build) · impl: yes · spec: yes
 
 ## Scenarios (after state)
 None: the web package has no automated tests and no Gherkin scenario in `user-interface.md` changes; the author checks every item in the browser.
@@ -92,3 +92,19 @@ Append-only. One row per change to the ticket, always with a reason. Written by 
 | 2026-11-16 | status | status: approved → draft | Definition changed after approval; needs re-approval |
 | 2026-11-16 | contradiction-check | check | Unchanged definition, same outcome as before: only user-interface.md#sessions-page; CLM-3 grouping and CLM-4 range filter kept |
 | 2026-11-16 | status | status: draft → approved | Restored: the definition did not change; a progress note was wrongly logged as a refinement. The author approved this definition in chat on 2026-11-14 |
+| 2026-11-16 | status | status: approved → in_progress | Implementation committed earlier; CLM-5 is now done |
+| 2026-11-16 | item | C1.impl: no → yes | The author checked the Glass Dark design in the browser and approved it in chat on 2026-11-16 |
+| 2026-11-16 | item | C1.spec: no → yes | user-interface.md#sessions-page |
+| 2026-11-16 | item | C2.impl: no → yes | The author checked the Glass Dark design in the browser and approved it in chat on 2026-11-16 |
+| 2026-11-16 | item | C2.spec: no → yes | user-interface.md#sessions-page |
+| 2026-11-16 | item | C3.impl: no → yes | The author checked the Glass Dark design in the browser and approved it in chat on 2026-11-16 |
+| 2026-11-16 | item | C3.spec: no → yes | user-interface.md#sessions-page |
+| 2026-11-16 | item | C4.impl: no → yes | The author checked the Glass Dark design in the browser and approved it in chat on 2026-11-16 |
+| 2026-11-16 | item | C4.spec: no → yes | user-interface.md#sessions-page |
+| 2026-11-16 | item | C5.impl: no → yes | The author checked the Glass Dark design in the browser and approved it in chat on 2026-11-16 |
+| 2026-11-16 | item | C5.spec: no → yes | user-interface.md#sessions-page |
+| 2026-11-16 | item | C6.impl: no → yes | npm run build passes |
+| 2026-11-16 | item | C6.spec: no → yes | user-interface.md#sessions-page |
+| 2026-11-16 | set | claude_md: pending → unchanged | No new convention: uses the tokens, icons and components from CLM-5 |
+| 2026-11-16 | status | status: in_progress → validating | All items implemented and synced into the spec |
+| 2026-11-16 | status | status: validating → done | The author checked the Glass Dark design in the browser and approved it in chat on 2026-11-16 |

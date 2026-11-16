@@ -2,7 +2,7 @@
 id: CLM-5                       # assigned by `flow new`, never by hand
 title: "Glass Dark foundations: dark-only theme, icon set and app shell"
 type: change                   # feature | change | bug | refactor | chore
-status: validating               # draft | approved | in_progress | validating | done | blocked | cancelled
+status: done               # draft | approved | in_progress | validating | done | blocked | cancelled
 priority: medium           # low | medium | high | critical
 
 # Placement
@@ -62,11 +62,11 @@ See `user-interface.md` (intro): the UI follows the system light or dark theme. 
 - The top bar becomes a side menu: brand, navigation with icons and live counts (Sessions: n live, Processes: n), a compact quota card with both meters and the reset time, and the stream connection state. Below 768 px it becomes a bottom tab bar with the three destinations; touch targets are at least 44 px. The quota readout keeps its link to `/quota` and its "Quota not configured" state.
 
 ### Checklist
-- [ ] C1 — Dark-only theme and glass tokens on every page; no light surface or system-theme switch remains · · verify: manual · impl: no · spec: no
-- [ ] C2 — Shared components and status/activity badges restyled; status readable without color · · verify: manual · impl: no · spec: no
-- [ ] C3 — Icon.tsx holds the full icon set and the badges and navigation use it · · verify: manual · impl: no · spec: no
-- [ ] C4 — Side menu with live counts, quota card and stream state; bottom tab bar below 768 px · · verify: manual · impl: no · spec: no
-- [ ] C5 — Fonts load from the bundle, with no request leaving the machine · · verify: manual · impl: no · spec: no
+- [x] C1 — Dark-only theme and glass tokens on every page; no light surface or system-theme switch remains · · verify: manual · impl: yes · spec: yes
+- [x] C2 — Shared components and status/activity badges restyled; status readable without color · · verify: manual · impl: yes · spec: yes
+- [x] C3 — Icon.tsx holds the full icon set and the badges and navigation use it · · verify: manual · impl: yes · spec: yes
+- [x] C4 — Side menu with live counts, quota card and stream state; bottom tab bar below 768 px · · verify: manual · impl: yes · spec: yes
+- [x] C5 — Fonts load from the bundle, with no request leaving the machine · · verify: manual · impl: yes · spec: yes
 - [x] C6 — The build passes · · verify: command(npm run build) · impl: yes · spec: yes
 
 ## Scenarios (after state)
@@ -104,3 +104,14 @@ Append-only. One row per change to the ticket, always with a reason. Written by 
 | 2026-11-14 | status | status: in_progress → validating | Implemented; manual items wait for the author's check in the browser |
 | 2026-11-14 | item | C6.impl: no → yes | npm run build passes |
 | 2026-11-14 | item | C6.spec: no → yes | user-interface.md intro and #top-bar |
+| 2026-11-16 | item | C1.impl: no → yes | The author checked the Glass Dark design in the browser and approved it in chat on 2026-11-16 |
+| 2026-11-16 | item | C1.spec: no → yes | user-interface.md intro and #top-bar |
+| 2026-11-16 | item | C2.impl: no → yes | The author checked the Glass Dark design in the browser and approved it in chat on 2026-11-16 |
+| 2026-11-16 | item | C2.spec: no → yes | user-interface.md intro and #top-bar |
+| 2026-11-16 | item | C3.impl: no → yes | The author checked the Glass Dark design in the browser and approved it in chat on 2026-11-16 |
+| 2026-11-16 | item | C3.spec: no → yes | user-interface.md intro and #top-bar |
+| 2026-11-16 | item | C4.impl: no → yes | The author checked the Glass Dark design in the browser and approved it in chat on 2026-11-16 |
+| 2026-11-16 | item | C4.spec: no → yes | user-interface.md intro and #top-bar |
+| 2026-11-16 | item | C5.impl: no → yes | The author checked the Glass Dark design in the browser and approved it in chat on 2026-11-16 |
+| 2026-11-16 | item | C5.spec: no → yes | user-interface.md intro and #top-bar |
+| 2026-11-16 | status | status: validating → done | The author checked the Glass Dark design in the browser and approved it in chat on 2026-11-16 |

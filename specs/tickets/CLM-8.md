@@ -2,7 +2,7 @@
 id: CLM-8                       # assigned by `flow new`, never by hand
 title: "Glass Dark: session header, Overview and Events tabs"
 type: change                   # feature | change | bug | refactor | chore
-status: approved               # draft | approved | in_progress | validating | done | blocked | cancelled
+status: done               # draft | approved | in_progress | validating | done | blocked | cancelled
 priority: medium           # low | medium | high | critical
 
 # Placement
@@ -32,7 +32,7 @@ touches:
   code_scope: [web/src/pages/session/SessionLayout.tsx, web/src/pages/session/OverviewTab.tsx, web/src/pages/session/EventsTab.tsx, web/src/components/TokenCharts.tsx, web/src/components/GitPanel.tsx, web/src/styles/**, specs/general/user-interface.md]
 
 # Closure gate: set after implementation (required before done)
-claude_md: pending               # pending | updated | unchanged
+claude_md: unchanged               # pending | updated | unchanged
 ---
 
 # CLM-8 · Glass Dark: session header, Overview and Events tabs
@@ -64,12 +64,12 @@ See `user-interface.md#session-view` (header and tabs), `#overview-tab` (tiles, 
 - "Following live" while the newest event is in view; otherwise a "Jump to latest · n new" button. "Load older events" stays.
 
 ### Checklist
-- [ ] C1 — Header chips with copy path, breadcrumb, and tabs with icons and counts · · verify: manual · impl: no · spec: no
-- [ ] C2 — Overview tiles, single area chart with toggles and the cache ring · · verify: manual · impl: no · spec: no
-- [ ] C3 — Git panel grouped with badges, and usage by model with share bars · · verify: manual · impl: no · spec: no
-- [ ] C4 — Events timeline with kind icons, turn separators, kind filters with counts and search · · verify: manual · impl: no · spec: no
-- [ ] C5 — Inline detail with Copy, error and subagent styling, following live and jump to latest · · verify: manual · impl: no · spec: no
-- [ ] C6 — The build passes · · verify: command(npm run build) · impl: no · spec: no
+- [x] C1 — Header chips with copy path, breadcrumb, and tabs with icons and counts · · verify: manual · impl: yes · spec: yes
+- [x] C2 — Overview tiles, single area chart with toggles and the cache ring · · verify: manual · impl: yes · spec: yes
+- [x] C3 — Git panel grouped with badges, and usage by model with share bars · · verify: manual · impl: yes · spec: yes
+- [x] C4 — Events timeline with kind icons, turn separators, kind filters with counts and search · · verify: manual · impl: yes · spec: yes
+- [x] C5 — Inline detail with Copy, error and subagent styling, following live and jump to latest · · verify: manual · impl: yes · spec: yes
+- [x] C6 — The build passes · · verify: command(npm run build) · impl: yes · spec: yes
 
 ## Scenarios (after state)
 None: the web package has no automated tests and no Gherkin scenario in `user-interface.md` changes; the author checks every item in the browser.
@@ -94,3 +94,19 @@ Append-only. One row per change to the ticket, always with a reason. Written by 
 | 2026-11-14 | refined | definition | Wrote the definition from the Glass Dark design proposal, split out of CLM-5 |
 | 2026-11-14 | contradiction-check | check | clean: session-view, overview-tab and events-tab only; the kind filter replaces the show-hooks toggle with hooks still hidden by default; no sibling touches these sections |
 | 2026-11-14 | status | status: draft → approved | The author approved the Glass Dark epic and all its tickets in chat |
+| 2026-11-16 | status | status: approved → in_progress | Implementation committed earlier; CLM-5 is now done |
+| 2026-11-16 | item | C1.impl: no → yes | The author checked the Glass Dark design in the browser and approved it in chat on 2026-11-16 |
+| 2026-11-16 | item | C1.spec: no → yes | user-interface.md#session-view, #overview-tab, #events-tab |
+| 2026-11-16 | item | C2.impl: no → yes | The author checked the Glass Dark design in the browser and approved it in chat on 2026-11-16 |
+| 2026-11-16 | item | C2.spec: no → yes | user-interface.md#session-view, #overview-tab, #events-tab |
+| 2026-11-16 | item | C3.impl: no → yes | The author checked the Glass Dark design in the browser and approved it in chat on 2026-11-16 |
+| 2026-11-16 | item | C3.spec: no → yes | user-interface.md#session-view, #overview-tab, #events-tab |
+| 2026-11-16 | item | C4.impl: no → yes | The author checked the Glass Dark design in the browser and approved it in chat on 2026-11-16 |
+| 2026-11-16 | item | C4.spec: no → yes | user-interface.md#session-view, #overview-tab, #events-tab |
+| 2026-11-16 | item | C5.impl: no → yes | The author checked the Glass Dark design in the browser and approved it in chat on 2026-11-16 |
+| 2026-11-16 | item | C5.spec: no → yes | user-interface.md#session-view, #overview-tab, #events-tab |
+| 2026-11-16 | item | C6.impl: no → yes | npm run build passes |
+| 2026-11-16 | item | C6.spec: no → yes | user-interface.md#session-view, #overview-tab, #events-tab |
+| 2026-11-16 | set | claude_md: pending → unchanged | No new convention: uses the tokens, icons and components from CLM-5 |
+| 2026-11-16 | status | status: in_progress → validating | All items implemented and synced into the spec |
+| 2026-11-16 | status | status: validating → done | The author checked the Glass Dark design in the browser and approved it in chat on 2026-11-16 |
