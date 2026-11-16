@@ -1,23 +1,35 @@
 import dagre from "@dagrejs/dagre";
 import {
   Background,
-  Controls,
   Handle,
   MiniMap,
   Position,
   ReactFlow,
   ReactFlowProvider,
   useReactFlow,
+  useViewport,
   type Edge,
   type Node,
   type NodeProps,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
-import { type Graph, type GraphItem, type GraphNode, type GraphNodeData, type NodeStatus } from "@claude-monitor/shared";
+import { Link, useParams } from "react-router-dom";
+import {
+  classifyTool,
+  TOOL_CATEGORIES,
+  TOOL_CATEGORY_LABEL,
+  type Graph,
+  type GraphItem,
+  type GraphNode,
+  type GraphNodeData,
+  type NodeStatus,
+  type ToolCategory,
+} from "@claude-monitor/shared";
 import { api, subscribe } from "../../api";
-import { formatDuration, formatTokens } from "../../format";
+import { CATEGORY_ICON, Icon, type IconName } from "../../components/Icon";
+import { formatCost, formatDuration, formatTokens } from "../../format";
+import { useSession } from "../../state/live";
 
 const NODE_WIDTH = 230;
 const NODE_HEIGHT = 74;
@@ -28,20 +40,43 @@ const EXPAND_ALL_UP_TO = 15;
 const FIT_ALL_UP_TO = 12;
 const READABLE_ZOOM = 0.85;
 
-type FlowNodeData = GraphNodeData & { kind: GraphNode["type"]; expanded?: boolean; onToggle?: () => void };
+type FlowNodeData = GraphNodeData & { kind: GraphNode["type"]; expanded?: boolean; onToggle?: () => void; selected?: boolean };
 type FlowNode = Node<FlowNodeData>;
 
 const STATUS_LABEL: Record<NodeStatus, string> = { running: "running", ok: "ok", error: "error" };
+const KIND_LABEL: Record<GraphNode["type"], string> = { session: "Session", turn: "Turn", tool: "Tool call", subagent: "Subagent", group: "Grouped calls" };
+
+/** "12 x Read" → "Read"; a single tool node's label is the tool name. */
+const toolNameOf = (n: { type: GraphNode["type"]; data: GraphNodeData }): string | undefined =>
+  n.type === "tool" ? n.data.label : n.type === "group" ? n.data.label.replace(/^\d+ x /, "") : undefined;
+
+function nodeIcon(kind: GraphNode["type"], label: string, data: GraphNodeData): IconName {
+  if (kind === "session") return "sessions";
+  if (kind === "turn") return "you";
+  if (kind === "subagent") return "agent";
+  const name = toolNameOf({ type: kind, data: { ...data, label } });
+  return name ? CATEGORY_ICON[classifyTool(name).category] : "other";
+}
 
 const Status = ({ status }: { status?: NodeStatus }) =>
   status ? <span className={`node-status node-status-${status}`}>{STATUS_LABEL[status]}</span> : null;
 
 const MonitorNode = memo(function MonitorNode({ data }: NodeProps<FlowNode>) {
   const canToggle = data.onToggle !== undefined;
+  const cls = [
+    "flow-node",
+    `flow-node-${data.kind}`,
+    data.status === "running" ? "running" : "",
+    data.status === "error" ? "failed" : "",
+    data.selected ? "is-selected" : "",
+  ].join(" ");
   return (
-    <div className={`flow-node flow-node-${data.kind} ${data.status === "running" ? "running" : ""} ${data.status === "error" ? "failed" : ""}`}>
+    <div className={cls}>
       {data.kind !== "session" && <Handle type="target" position={Position.Top} isConnectable={false} />}
       <div className="flow-node-head">
+        <span className="flow-node-icon">
+          <Icon name={nodeIcon(data.kind, data.label, data)} size={14} />
+        </span>
         <span className="flow-node-label">{data.label}</span>
         <Status status={data.status} />
       </div>
@@ -102,43 +137,122 @@ function defaultExpanded(graph: Graph): Set<string> {
 
 const plural = (n: number, word: string): string => `${n} ${word}${n === 1 ? "" : "s"}`;
 
-function Drawer({ node, onClose }: { node: GraphNode; onClose: () => void }) {
+const statusColor = (status?: NodeStatus, kind?: GraphNode["type"]): string =>
+  status === "running" ? "#3dd6c0" : status === "error" ? "#ff7a90" : kind === "subagent" ? "#8e9bff" : status === "ok" ? "#6b7186" : "#4a4f63";
+
+interface CallStats {
+  byCategory: Map<ToolCategory, number>;
+  failed: { label: string; summary?: string }[];
+  total: number;
+}
+
+/** Tool calls under a node: its own items, or every tool and group node inside it. */
+function callsUnder(node: GraphNode, graph: Graph): CallStats {
+  const byCategory = new Map<ToolCategory, number>();
+  const failed: CallStats["failed"] = [];
+  let total = 0;
+  const add = (name: string, n: number) => {
+    const c = classifyTool(name).category;
+    byCategory.set(c, (byCategory.get(c) ?? 0) + n);
+    total += n;
+  };
+  const countNode = (n: GraphNode) => {
+    const name = toolNameOf(n);
+    if (!name) return;
+    if (n.type === "group" && n.data.items) {
+      add(name, n.data.items.length);
+      for (const item of n.data.items as GraphItem[]) if (item.status === "error") failed.push({ label: name, summary: item.summary });
+    } else {
+      add(name, n.type === "group" ? (n.data.count ?? 1) : 1);
+      if (n.data.status === "error") failed.push({ label: name, summary: n.data.summary });
+    }
+  };
+  if (node.type === "tool" || node.type === "group") countNode(node);
+  else {
+    const byId = new Map(graph.nodes.map((n) => [n.id, n]));
+    const within = (n: GraphNode): boolean => {
+      if (node.type === "session") return true;
+      let c = n.data.container;
+      while (c) {
+        if (c === node.id) return true;
+        c = byId.get(c)?.data.container;
+      }
+      return false;
+    };
+    for (const n of graph.nodes) if (within(n)) countNode(n);
+  }
+  return { byCategory, failed, total };
+}
+
+function Inspector({ node, graph, sessionId, onClose }: { node: GraphNode; graph: Graph; sessionId: string; onClose: () => void }) {
   const { data } = node;
+  const session = useSession(sessionId);
+  const calls = useMemo(() => callsUnder(node, graph), [node, graph]);
+  const max = Math.max(0, ...calls.byCategory.values());
+  const toolName = toolNameOf(node);
+  const eventsLink = `/sessions/${sessionId}/events${toolName ? `?q=${encodeURIComponent(toolName)}` : ""}`;
   return (
-    <aside className="drawer" aria-label="Node details">
-      <div className="drawer-head">
-        <h2>{data.label}</h2>
-        <button className="ghost" onClick={onClose}>
-          Close
+    <aside className="inspector card" aria-label="Node details">
+      <div className="inspector-head">
+        <span className="flow-node-icon">
+          <Icon name={nodeIcon(node.type, data.label, data)} size={16} />
+        </span>
+        <div className="inspector-title">
+          <span className="lbl">{KIND_LABEL[node.type]}</span>
+          <h2>{data.label}</h2>
+        </div>
+        <button className="btn btn-icon" onClick={onClose} aria-label="Close details">
+          <Icon name="close" size={16} />
         </button>
       </div>
+      {data.summary && <p className="inspector-summary">{data.summary}</p>}
       <dl className="drawer-facts">
-        {data.status && (
+        <dt>Status</dt>
+        <dd>{data.status ? <Status status={data.status} /> : "-"}</dd>
+        <dt>Duration</dt>
+        <dd>{data.durationMs !== undefined ? formatDuration(data.durationMs) : "-"}</dd>
+        <dt>Tokens</dt>
+        <dd>{data.tokens ? formatTokens(data.tokens) : "-"}</dd>
+        <dt>Model</dt>
+        <dd>{data.model ?? "-"}</dd>
+        {node.type === "session" && (
           <>
-            <dt>Status</dt>
-            <dd>{data.status}</dd>
-          </>
-        )}
-        {data.durationMs !== undefined && (
-          <>
-            <dt>Duration</dt>
-            <dd>{formatDuration(data.durationMs)}</dd>
-          </>
-        )}
-        {data.tokens !== undefined && data.tokens > 0 && (
-          <>
-            <dt>Tokens</dt>
-            <dd>{formatTokens(data.tokens)}</dd>
-          </>
-        )}
-        {data.model && (
-          <>
-            <dt>Model</dt>
-            <dd>{data.model}</dd>
+            <dt>Cost</dt>
+            <dd>{formatCost(session?.costUsd)}</dd>
           </>
         )}
       </dl>
-      {data.summary && <p className="drawer-summary">{data.summary}</p>}
+      {calls.total > 0 && (
+        <>
+          <h3>Tool calls ({calls.total})</h3>
+          <ul className="cat-bars">
+            {TOOL_CATEGORIES.filter((c) => calls.byCategory.has(c)).map((c) => (
+              <li key={c}>
+                <Icon name={CATEGORY_ICON[c]} size={14} />
+                <span>{TOOL_CATEGORY_LABEL[c]}</span>
+                <span className="hbar">
+                  <span style={{ width: `${max ? ((calls.byCategory.get(c) ?? 0) / max) * 100 : 0}%`, background: "var(--ember)" }} />
+                </span>
+                <strong>{calls.byCategory.get(c)}</strong>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      {calls.failed.length > 0 && (
+        <>
+          <h3 className="error">Failed calls ({calls.failed.length})</h3>
+          <ul className="failed-calls">
+            {calls.failed.slice(0, 10).map((f, i) => (
+              <li key={i}>
+                <Icon name="warning" size={14} />
+                <span className="mono">{f.label}</span>
+                <span className="muted ellipsis">{f.summary}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
       {data.input && (
         <>
           <h3>Input (truncated)</h3>
@@ -171,7 +285,43 @@ function Drawer({ node, onClose }: { node: GraphNode; onClose: () => void }) {
           </ul>
         </>
       )}
+      <Link to={eventsLink} className="btn inspector-link">
+        <Icon name="events" size={16} />
+        {toolName ? `Find ${toolName} in Events` : "Open Events"}
+      </Link>
     </aside>
+  );
+}
+
+function ZoomControls({ onExpandAll, onCollapseAll }: { onExpandAll: () => void; onCollapseAll: () => void }) {
+  const { zoomIn, zoomOut, fitView } = useReactFlow();
+  const { zoom } = useViewport();
+  return (
+    <div className="flow-controls">
+      <div className="control-group">
+        <button className="btn btn-icon" onClick={() => void zoomOut()} aria-label="Zoom out">
+          <Icon name="minus" size={16} />
+        </button>
+        <span className="zoom-level" aria-live="polite">
+          {Math.round(zoom * 100)}%
+        </span>
+        <button className="btn btn-icon" onClick={() => void zoomIn()} aria-label="Zoom in">
+          <Icon name="plus" size={16} />
+        </button>
+      </div>
+      <button className="btn" onClick={() => void fitView({ padding: 0.15, maxZoom: 1 })}>
+        <Icon name="fit" size={16} />
+        Fit
+      </button>
+      <div className="control-group">
+        <button className="btn" onClick={onExpandAll}>
+          Expand all
+        </button>
+        <button className="btn" onClick={onCollapseAll}>
+          Collapse all
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -223,7 +373,7 @@ function FlowCanvas({ sessionId }: { sessionId: string }) {
     [isExpanded],
   );
 
-  const { nodes, edges } = useMemo(() => {
+  const laidOut = useMemo(() => {
     if (!graph) return { nodes: [] as FlowNode[], edges: [] as Edge[] };
     const byId = new Map(graph.nodes.map((n) => [n.id, n]));
     const visibleCache = new Map<string, boolean>();
@@ -257,6 +407,12 @@ function FlowCanvas({ sessionId }: { sessionId: string }) {
       .map((e) => ({ id: e.id, source: e.source, target: e.target, type: "smoothstep" }));
     return { nodes: layout(visibleNodes, visibleEdges), edges: visibleEdges };
   }, [graph, isExpanded, toggle]);
+
+  // Selection is drawn on top of the layout, so picking a node never re-lays the graph.
+  const nodes = useMemo(
+    () => (selectedId ? laidOut.nodes.map((n) => (n.id === selectedId ? { ...n, data: { ...n.data, selected: true } } : n)) : laidOut.nodes),
+    [laidOut.nodes, selectedId],
+  );
 
   // Only once: after this the viewport belongs to the reader, and live updates must not move it.
   useEffect(() => {
@@ -293,38 +449,46 @@ function FlowCanvas({ sessionId }: { sessionId: string }) {
         <span className="muted">
           {plural(turnCount, "turn")} · {plural(toolCount, "tool call")} · {plural(agentCount, "subagent")}
         </span>
-        <div className="flow-actions">
-          <label className="check">
-            <input type="checkbox" checked={group} onChange={(e) => setGroup(e.target.checked)} /> Group repeated tools
-          </label>
-          <button className="ghost" onClick={() => setAll(true)}>
-            Expand all
-          </button>
-          <button className="ghost" onClick={() => setAll(false)}>
-            Collapse all
-          </button>
-        </div>
+        <label className="check">
+          <input type="checkbox" checked={group} onChange={(e) => setGroup(e.target.checked)} /> Group repeated tools
+        </label>
       </div>
-      <div className="flow-wrap">
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          nodeTypes={nodeTypes}
-          nodesConnectable={false}
-          nodesDraggable={false}
-          minZoom={0.05}
-          maxZoom={1.5}
-          onlyRenderVisibleElements
-          colorMode="system"
-          onNodeClick={(_, node) => setSelectedId(node.id)}
-          onPaneClick={() => setSelectedId(null)}
-          proOptions={{ hideAttribution: true }}
-        >
-          <Background gap={24} />
-          <Controls showInteractive={false} />
-          <MiniMap pannable zoomable />
-        </ReactFlow>
-        {selected && <Drawer node={selected} onClose={() => setSelectedId(null)} />}
+      <div className={selected ? "flow-layout with-inspector" : "flow-layout"}>
+        <div className="flow-wrap">
+          <ReactFlow
+            nodes={nodes}
+            edges={laidOut.edges}
+            nodeTypes={nodeTypes}
+            nodesConnectable={false}
+            nodesDraggable={false}
+            minZoom={0.05}
+            maxZoom={1.5}
+            onlyRenderVisibleElements
+            colorMode="dark"
+            onNodeClick={(_, node) => setSelectedId(node.id)}
+            onPaneClick={() => setSelectedId(null)}
+            proOptions={{ hideAttribution: true }}
+          >
+            <Background gap={24} />
+            <MiniMap pannable zoomable nodeColor={(n) => statusColor((n.data as FlowNodeData).status, (n.data as FlowNodeData).kind)} nodeStrokeWidth={0} />
+          </ReactFlow>
+          <div className="flow-legend" aria-label="Legend">
+            <span>
+              <span className="lg lg-running" /> running
+            </span>
+            <span>
+              <span className="lg lg-ok" /> ok
+            </span>
+            <span>
+              <span className="lg lg-error" /> error
+            </span>
+            <span>
+              <span className="lg lg-agent" /> subagent
+            </span>
+          </div>
+          <ZoomControls onExpandAll={() => setAll(true)} onCollapseAll={() => setAll(false)} />
+        </div>
+        {selected && <Inspector node={selected} graph={graph} sessionId={sessionId} onClose={() => setSelectedId(null)} />}
       </div>
     </>
   );

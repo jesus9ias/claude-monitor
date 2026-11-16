@@ -1,10 +1,30 @@
 import { memo } from "react";
 import type { PipelineStats } from "@claude-monitor/shared";
+import { CATEGORY_ICON, Icon, type IconName } from "../../../components/Icon";
 import { formatTokens } from "../../../format";
 import { BLOCKS, EDGES, TOOLS_BOX, VIEW, type Block, type BlockId, type Visual } from "./layout";
 
 const PARTICLES = 3;
 const PARTICLE_S = 1.2;
+
+const BLOCK_ICON: Record<string, IconName> = { you: "you", model: "model", output: "output", context: "context", router: "router", needs: "input" };
+const iconFor = (id: BlockId): IconName =>
+  id.startsWith("cat:") ? CATEGORY_ICON[id.slice(4) as keyof typeof CATEGORY_ICON] : (BLOCK_ICON[id] ?? "other");
+
+/** The active path takes the color of the block it leads to. */
+function edgeTone(id: string): string {
+  if (id === "router-needs") return "warn";
+  if (id === "router-tools" || id.startsWith("tools:")) return "tool";
+  if (id === "model-output") return "neutral";
+  return "model";
+}
+
+/** A tool category with no call in this session. */
+function unused(b: Block, stats: PipelineStats | null): boolean {
+  if (!stats || !b.id.startsWith("cat:")) return false;
+  const c = b.id.slice(4) as keyof PipelineStats["categories"];
+  return c === "agent" ? stats.agents.length === 0 && stats.categories.agent.calls === 0 : stats.categories[c].calls === 0;
+}
 
 /** The small second line of each block: what it has done in this session. */
 function subtitle(b: Block, stats: PipelineStats | null, visual: Visual, mcpServer?: string): string {
@@ -85,7 +105,7 @@ export const PipelineDiagram = memo(function PipelineDiagram({ visual, stats, se
       {EDGES.map((e) => {
         const on = flowing.has(e.id);
         if (e.hidden && !on) return <path key={e.id} id={`pl-${e.id}`} d={e.d} className="pl-edge-hidden" />;
-        return <path key={e.id} id={`pl-${e.id}`} d={e.d} className={`pl-edge ${on ? "is-on" : ""}`} markerEnd={e.hidden ? undefined : "url(#pl-arrow)"} />;
+        return <path key={e.id} id={`pl-${e.id}`} d={e.d} className={`pl-edge ${on ? `is-on pl-edge-${edgeTone(e.id)}` : ""}`} markerEnd={e.hidden ? undefined : "url(#pl-arrow)"} />;
       })}
 
       {BLOCKS.map((b) => {
@@ -95,7 +115,7 @@ export const PipelineDiagram = memo(function PipelineDiagram({ visual, stats, se
         return (
           <g
             key={b.id}
-            className={`pl-block pl-tone-${b.tone} ${isActive ? "is-active" : ""} ${isPulse ? "is-pulse" : ""} ${selected === b.id ? "is-selected" : ""}`}
+            className={`pl-block pl-tone-${b.tone} ${isActive ? "is-active" : unused(b, stats) ? "is-unused" : ""} ${isPulse ? "is-pulse" : ""} ${selected === b.id ? "is-selected" : ""}`}
             role="button"
             tabIndex={0}
             aria-pressed={selected === b.id}
@@ -108,11 +128,14 @@ export const PipelineDiagram = memo(function PipelineDiagram({ visual, stats, se
               }
             }}
           >
-            <rect x={b.x} y={b.y} width={b.w} height={b.h} rx={8} />
-            <text className="pl-label" x={b.x + b.w / 2} y={b.y + (small ? 19 : 21)} textAnchor="middle" dominantBaseline="central">
+            <rect x={b.x} y={b.y} width={b.w} height={b.h} rx={12} />
+            <g className="pl-icon" transform={`translate(${b.x + 10} ${b.y + (small ? 11 : 13)})`}>
+              <Icon name={iconFor(b.id)} size={small ? 14 : 16} />
+            </g>
+            <text className={small ? "pl-label pl-label-sm" : "pl-label"} x={b.x + (small ? 30 : 34)} y={b.y + (small ? 18 : 21)} dominantBaseline="central">
               {b.label}
             </text>
-            <text className="pl-sub" x={b.x + b.w / 2} y={b.y + (small ? 36 : 38)} textAnchor="middle" dominantBaseline="central">
+            <text className={small ? "pl-sub pl-sub-sm" : "pl-sub"} x={b.x + 10} y={b.y + (small ? 37 : 40)} dominantBaseline="central">
               {subtitle(b, stats, visual, mcpServer)}
             </text>
             {b.id === "context" && <ContextBar b={b} stats={stats} />}

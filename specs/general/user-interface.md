@@ -152,7 +152,11 @@ A timeline of the loaded events, newest first.
 ### Flow tab
 A dagre-laid-out graph of turns → tools and subagents, updated live without moving the viewport.
 
-More than 8 calls in a turn fold into groups ("12 x Read"). Containers expand and collapse; clicking a node opens a drawer with status, duration, tokens, model, and the truncated input and result. Running nodes pulse.
+More than 8 calls in a turn fold into groups ("12 x Read"). Containers expand and collapse.
+
+- **Nodes** are glass cards with an icon (tool category for calls and groups, you for turns, subagent, session), label, status and meta. The border shows status: running glows teal (and pulses unless reduced motion), error is rose, the selected node iris; subagents carry an iris edge.
+- A fixed **legend** (running, ok, error, subagent) and grouped **controls**: zoom out / in with the zoom level, fit, expand all and collapse all. The minimap colors nodes by status.
+- **Inspector**: clicking a node opens a side panel beside the graph (below it under 1100 px): kind, status, summary, duration, tokens, model, cost (the session node, the only one with a known cost), the tool calls under the node per category as bars, its failed calls, the truncated input and result, the folded calls of a group, and a link to Events searched for the node's tool (`?q=`).
 
 ### Pipeline tab
 A fixed SVG diagram of the session's loop whose blocks light up and whose edges carry particles for the current phase.
@@ -161,9 +165,11 @@ The geometry and the phase → animation mapping live in `web/src/pages/session/
 
 - **Blocks**: You, Model, Output, Context, Tool router, Needs input, and one block per tool category (Read files, Search, Write code, Shell, Web, MCP, Skill, Subagents, Planning, Other). Each shows a session counter. Context has a fill bar against the model's context window, from `server/src/domain/models.json` (current Opus, Fable, Sonnet and Haiku models: 1M; any other model: 200K); a session seen above its window is taken to run the 1M-token variant.
 - **Animation**: the blocks for the current phase light up, and particles run along the edges in use. Requesting animates You → Model, Router → Model after a tool, or Context → Model after compaction. Thinking pulses Model and draws from Context. Writing animates Model → Output. A tool animates Model → Router → its category, and MCP shows the server. A permission prompt animates Router → Needs input, and compaction pulses Context. Running subagents pulse Subagents.
-- **Reduced motion**: blocks are still highlighted, but nothing moves.
+- **Reduced motion**: no particles or pulses; the active path is shown by color alone.
 - **Drawer**: clicking a block opens a drawer with the current call, counts, average and last duration, totals per tool, per MCP server or per subagent, and the last 20 calls.
-- **Replay**: when the session is not active, "Replay last turn" plays the last turn's phases at 4x speed, each step held between 350 ms and 2 s. A session that becomes active ends the replay.
+- **Look**: every block carries its icon (category icons on the tool blocks). The active path takes the color of the block it leads to (iris to the model and router, ember to tools, amber to Needs input), and tool categories with no call in the session are dimmed.
+- **Replay**: when the session is not active, "Replay last turn" plays the last turn's phases in a transport bar: previous / play-pause / next step, speed 1×, 2× or 4× (default 4×; at 4× each step is held 350 ms to 2 s, slower speeds stretch both bounds), and a timeline with one tick per step colored by phase (iris model, ember tool, amber input) that jumps on click. Playback pauses on the last step. "Back to live" ends the replay, and a session that becomes active ends it too.
+- **Last turn by category**: beside the diagram (below it under 1100 px), the last turn's tool calls per category as bars with icons and the time spent, from the replay steps of the pipeline stats.
 - **Live data**: the counters reload, debounced, on `event_added`. The phase comes from the session's live activity.
 - Below 600 px the diagram scrolls horizontally inside its card.
 
